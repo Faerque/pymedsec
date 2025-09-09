@@ -219,7 +219,7 @@ class TestAuditSecurity:
 
         # Verify anchor hash chain
         for i in range(1, len(entries)):
-            previous_anchor = entries[i-1]['anchor_hash']
+            previous_anchor = entries[i - 1]['anchor_hash']
             current_content = {k: v for k, v in entries[i].items()
                                if k not in ['signature', 'anchor_hash']}
 

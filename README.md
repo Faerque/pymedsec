@@ -11,7 +11,7 @@
 
 **Enterprise-Grade Medical Image Security & Compliance Framework**
 
-*Secure medical image processing with HIPAA/GDPR/GxP compliance, envelope encryption, PHI sanitization, and tamper-evident audit logging*
+_Secure medical image processing with HIPAA/GDPR/GxP compliance, envelope encryption, PHI sanitization, and tamper-evident audit logging_
 
 [🚀 Quick Start](#-quick-start) •
 [📖 Documentation](#-documentation) •
@@ -72,7 +72,7 @@ PyMedSec follows a modular, security-first architecture designed for enterprise 
 
 ```
                 Medical Image Processing Pipeline
-                
+
 ┌─────────────┐   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
 │             │   │                 │   │                 │   │                 │
 │  Raw Image  │──▶│  PHI Scrubbing  │──▶│   Encryption    │──▶│ Secure Storage  │
@@ -98,7 +98,7 @@ PyMedSec follows a modular, security-first architecture designed for enterprise 
 
 ```
                Secure Machine Learning Workflow
-               
+
 ┌─────────────┐   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
 │ Encrypted   │   │ Memory-Only     │   │ Tensor          │   │ Model Training  │
 │ Dataset     │──▶│ Decryption      │──▶│ Conversion      │──▶│                 │
@@ -133,7 +133,7 @@ pip install pymedsec[dev,aws,vault,ocr]
 
 # Specific feature sets
 pip install pymedsec[aws]        # AWS KMS support
-pip install pymedsec[vault]      # HashiCorp Vault support  
+pip install pymedsec[vault]      # HashiCorp Vault support
 pip install pymedsec[ocr]        # OCR-based redaction
 pip install pymedsec[blockchain] # Blockchain anchoring
 ```
@@ -155,7 +155,7 @@ with open("patient_scan.dcm", "rb") as f:
 
 # 4. Encrypt for secure storage
 encrypted_package = encrypt_blob(
-    clean_data, 
+    clean_data,
     kms_client=kms,
     aad={"dataset": "study2025", "modality": "CT"}
 )
@@ -177,7 +177,7 @@ print("✅ Medical image securely processed and encrypted!")
 from pymedsec import load_policy, list_policies, set_active_policy
 
 # Load built-in policies
-policy = load_policy("hipaa_default")  # or "gdpr_default", "gxp_default" 
+policy = load_policy("hipaa_default")  # or "gdpr_default", "gxp_default"
 
 # Load custom policy
 policy = load_policy("/path/to/custom_policy.yaml")
@@ -195,7 +195,7 @@ set_active_policy("hipaa_default")
 from pymedsec import get_kms_client
 
 # AWS KMS (production)
-kms = get_kms_client("aws", 
+kms = get_kms_client("aws",
                      key_id="alias/medical-images",
                      region_name="us-east-1")
 
@@ -214,12 +214,12 @@ kms = get_kms_client("mock")
 from pymedsec import scrub_dicom, scrub_image, encrypt_blob, decrypt_blob
 
 # DICOM sanitization with PHI removal
-clean_dicom = scrub_dicom(dicom_bytes, 
+clean_dicom = scrub_dicom(dicom_bytes,
                           policy=policy,
                           pseudo_pid="ANON123",
                           preserve_technical=True)
 
-# Generic image sanitization  
+# Generic image sanitization
 clean_image = scrub_image(image_bytes,
                           format_hint="png",  # or "jpeg", "tiff"
                           policy=policy)
@@ -257,9 +257,9 @@ for batch_tensors, metadata in dataloader:
     # Train your model
     outputs = model(batch_tensors)
     loss = criterion(outputs, targets)
-    
+
 # Direct tensor decryption (zero-copy)
-tensor = decrypt_to_tensor(encrypted_package, 
+tensor = decrypt_to_tensor(encrypted_package,
                           kms_client=kms,
                           format_hint="dicom")
 ```
@@ -294,14 +294,14 @@ PyMedSec uses environment variables and YAML configuration files for flexible de
 
 ### Environment Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `PYMEDSEC_POLICY` | Path to YAML policy file | - | ✅ |
-| `PYMEDSEC_KMS_BACKEND` | KMS backend (`aws`\|`vault`\|`mock`) | `mock` | ✅ |
-| `PYMEDSEC_KMS_KEY_REF` | KMS key identifier | - | ✅ |
-| `PYMEDSEC_AUDIT_PATH` | Audit log file path | `./audit.jsonl` | - |
-| `PYMEDSEC_DEBUG` | Enable debug logging | `false` | - |
-| `PYMEDSEC_NO_PLAINTEXT_DISK` | Forbid plaintext disk writes | `false` | - |
+| Variable                     | Description                          | Default         | Required |
+| ---------------------------- | ------------------------------------ | --------------- | -------- |
+| `PYMEDSEC_POLICY`            | Path to YAML policy file             | -               | ✅       |
+| `PYMEDSEC_KMS_BACKEND`       | KMS backend (`aws`\|`vault`\|`mock`) | `mock`          | ✅       |
+| `PYMEDSEC_KMS_KEY_REF`       | KMS key identifier                   | -               | ✅       |
+| `PYMEDSEC_AUDIT_PATH`        | Audit log file path                  | `./audit.jsonl` | -        |
+| `PYMEDSEC_DEBUG`             | Enable debug logging                 | `false`         | -        |
+| `PYMEDSEC_NO_PLAINTEXT_DISK` | Forbid plaintext disk writes         | `false`         | -        |
 
 ### Policy Configuration
 
@@ -309,38 +309,38 @@ Create a YAML policy file to define security and compliance requirements:
 
 ```yaml
 # /etc/pymedsec/hipaa_policy.yaml
-schema_version: "1.0"
-name: "HIPAA Compliance Policy"
-description: "Enterprise HIPAA-compliant policy for medical imaging"
+schema_version: '1.0'
+name: 'HIPAA Compliance Policy'
+description: 'Enterprise HIPAA-compliant policy for medical imaging'
 
 sanitization:
   dicom:
     remove_private_tags: true
     regenerate_uids: true
     preserve_technical_tags: true
-    phi_tags_action: "remove"  # remove, replace, or pseudonymize
-    burned_in_annotation_policy: "strict"  # strict, moderate, or permissive
-    
+    phi_tags_action: 'remove' # remove, replace, or pseudonymize
+    burned_in_annotation_policy: 'strict' # strict, moderate, or permissive
+
   exif:
     strip_all_metadata: true
     preserve_orientation: false
     preserve_color_space: true
 
 encryption:
-  algorithm: "AES-256-GCM"
+  algorithm: 'AES-256-GCM'
   key_rotation_days: 90
   require_kms: true
-  additional_authenticated_data: ["dataset_id", "modality", "timestamp"]
+  additional_authenticated_data: ['dataset_id', 'modality', 'timestamp']
 
 audit:
   log_all_operations: true
   include_file_hashes: true
   blockchain_anchoring: false
-  retention_days: 2557  # 7 years for HIPAA
+  retention_days: 2557 # 7 years for HIPAA
 
 compliance:
-  framework: "hipaa"  # hipaa, gdpr, gxp
-  purpose_limitation: "medical_research"
+  framework: 'hipaa' # hipaa, gdpr, gxp
+  purpose_limitation: 'medical_research'
   data_minimization: true
   pseudonymization_required: true
 ```
@@ -392,7 +392,7 @@ Comprehensive removal and pseudonymization of Protected Health Information:
 # Automatic PHI tag removal based on DICOM standard
 PHI_TAGS = [
     (0x0010, 0x0010),  # Patient's Name
-    (0x0010, 0x0020),  # Patient ID  
+    (0x0010, 0x0020),  # Patient ID
     (0x0010, 0x0030),  # Patient's Birth Date
     (0x0010, 0x1040),  # Patient's Address
     (0x0008, 0x0080),  # Institution Name
@@ -403,7 +403,7 @@ PHI_TAGS = [
 # Technical tags preserved for medical utility
 TECHNICAL_TAGS = [
     (0x0018, 0x0050),  # Slice Thickness
-    (0x0018, 0x0088),  # Spacing Between Slices  
+    (0x0018, 0x0088),  # Spacing Between Slices
     (0x0020, 0x0032),  # Image Position Patient
     (0x0028, 0x0030),  # Pixel Spacing
     # ... imaging parameters
@@ -426,7 +426,7 @@ Tamper-evident audit logging with HMAC signatures and optional blockchain anchor
 PyMedSec addresses HIPAA Security Rule requirements:
 
 - **§164.312(a)(1)** - Access Control: KMS-based access control with audit logging
-- **§164.312(a)(2)(i)** - Unique User Identification: Actor tracking in audit logs  
+- **§164.312(a)(2)(i)** - Unique User Identification: Actor tracking in audit logs
 - **§164.312(b)** - Audit Controls: Comprehensive tamper-evident audit trail
 - **§164.312(c)(1)** - Integrity: HMAC signatures and hash verification
 - **§164.312(d)** - Person or Entity Authentication: KMS authentication
@@ -448,25 +448,27 @@ PyMedSec addresses HIPAA Security Rule requirements:
 
 ### Benchmarks
 
-| Operation | Image Size | Throughput | Memory Usage |
-|-----------|------------|------------|--------------|
-| DICOM Encryption | 512x512x16bit | 45 MB/s | 128 MB |
-| DICOM Decryption | 512x512x16bit | 52 MB/s | 96 MB |
-| PHI Sanitization | 1024 tags | 1,200 images/s | 64 MB |
-| Tensor Conversion | 512x512 DICOM | 890 images/s | 32 MB |
+| Operation         | Image Size    | Throughput     | Memory Usage |
+| ----------------- | ------------- | -------------- | ------------ |
+| DICOM Encryption  | 512x512x16bit | 45 MB/s        | 128 MB       |
+| DICOM Decryption  | 512x512x16bit | 52 MB/s        | 96 MB        |
+| PHI Sanitization  | 1024 tags     | 1,200 images/s | 64 MB        |
+| Tensor Conversion | 512x512 DICOM | 890 images/s   | 32 MB        |
 
-*Benchmarks on AWS c5.2xlarge (8 vCPU, 16 GB RAM)*
+_Benchmarks on AWS c5.2xlarge (8 vCPU, 16 GB RAM)_
 
 ### Scalability
 
 - **Horizontal Scaling**: Stateless design enables easy horizontal scaling
-- **Cloud Native**: Native integration with AWS, Azure, and GCP KMS services  
+- **Cloud Native**: Native integration with AWS, Azure, and GCP KMS services
 - **Memory Efficient**: Zero-copy operations and automatic cleanup
 - **Batch Processing**: Optimized for large-scale medical imaging pipelines
-pip install pymedsec[aws]
+  pip install pymedsec[aws]
 
 # With Vault KMS support
+
 pip install pymedsec[vault]
+
 ## 🔧 Examples
 
 ### Healthcare Research Pipeline
@@ -484,17 +486,17 @@ for dicom_file in Path("./raw_scans/").glob("*.dcm"):
     # Sanitize and encrypt
     with open(dicom_file, "rb") as f:
         clean_data = pymedsec.scrub_dicom(
-            f.read(), 
+            f.read(),
             policy=policy,
             pseudo_pid=f"STUDY001_{dicom_file.stem}"
         )
-    
+
     encrypted_pkg = pymedsec.encrypt_blob(
         clean_data,
         kms_client=kms,
         aad={"study": "TRIAL001", "patient": dicom_file.stem}
     )
-    
+
     # Save encrypted version
     output_file = Path("./secure_scans/") / f"{dicom_file.stem}.enc"
     with open(output_file, "w") as f:
@@ -531,12 +533,12 @@ for epoch in range(10):
         # Forward pass
         outputs = model(images)
         loss = criterion(outputs, targets)
-        
+
         # Backward pass
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        
+
         # Images automatically cleared from memory after batch
 ```
 
@@ -630,7 +632,7 @@ make test-integration
 # Format code
 make fmt
 
-# Lint code  
+# Lint code
 make lint
 
 # Type checking
@@ -718,37 +720,37 @@ spec:
     spec:
       serviceAccountName: pymedsec-service-account
       containers:
-      - name: pymedsec
-        image: your-registry/pymedsec:latest
-        env:
-        - name: PYMEDSEC_POLICY
-          value: /etc/config/policy.yaml
-        - name: PYMEDSEC_KMS_BACKEND
-          value: aws
-        - name: PYMEDSEC_KMS_KEY_REF
-          valueFrom:
-            secretKeyRef:
-              name: kms-config
-              key: key-id
-        volumeMounts:
-        - name: config-volume
-          mountPath: /etc/config
-        - name: audit-volume
-          mountPath: /var/log/pymedsec
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
+        - name: pymedsec
+          image: your-registry/pymedsec:latest
+          env:
+            - name: PYMEDSEC_POLICY
+              value: /etc/config/policy.yaml
+            - name: PYMEDSEC_KMS_BACKEND
+              value: aws
+            - name: PYMEDSEC_KMS_KEY_REF
+              valueFrom:
+                secretKeyRef:
+                  name: kms-config
+                  key: key-id
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+            - name: audit-volume
+              mountPath: /var/log/pymedsec
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '100m'
+            limits:
+              memory: '1Gi'
+              cpu: '500m'
       volumes:
-      - name: config-volume
-        configMap:
-          name: pymedsec-config
-      - name: audit-volume
-        persistentVolumeClaim:
-          claimName: audit-storage
+        - name: config-volume
+          configMap:
+            name: pymedsec-config
+        - name: audit-volume
+          persistentVolumeClaim:
+            claimName: audit-storage
 ```
 
 ## 📚 Additional Resources

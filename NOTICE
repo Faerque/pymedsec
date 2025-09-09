@@ -1,0 +1,93 @@
+PyMedSec - Medical Image Security Framework
+Copyright 2025 PyMedSec Contributors
+
+This product includes software developed by the PyMedSec project 
+(https://github.com/Faerque/pymedsec).
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+================================================================================
+
+This software contains the following third-party components:
+
+1. Cryptography Library
+   Copyright (c) Individual contributors
+   Licensed under the Apache License, Version 2.0 or BSD License
+
+2. PyDICOM
+   Copyright (c) 2008-2023 PyDICOM Contributors
+   Licensed under the MIT License
+
+3. Pillow (PIL Fork)
+   Copyright (c) 2010-2023 Alex Clark and Contributors
+   Licensed under the HPND License
+
+4. PyYAML
+   Copyright (c) 2017-2023 Ingy döt Net
+   Copyright (c) 2006-2016 Kirill Simonov
+   Licensed under the MIT License
+
+5. Click
+   Copyright 2014 Pallets
+   Licensed under the BSD-3-Clause License
+
+6. NumPy
+   Copyright (c) 2005-2023 NumPy Developers
+   Licensed under the BSD License
+
+================================================================================
+
+HEALTHCARE COMPLIANCE NOTICE:
+
+This software is designed to support healthcare organizations in implementing
+secure medical image processing workflows. However, the software by itself
+does not ensure compliance with healthcare regulations such as HIPAA, GDPR,
+or GxP requirements.
+
+Organizations using this software in healthcare environments are responsible
+for:
+
+1. Implementing appropriate administrative, physical, and technical safeguards
+2. Conducting proper risk assessments and validation
+3. Ensuring compliance with applicable regulations and standards
+4. Maintaining proper documentation and audit trails
+5. Training personnel on security and privacy requirements
+
+The contributors and maintainers of this software make no warranties or
+guarantees regarding regulatory compliance and assume no liability for
+compliance failures or security incidents resulting from the use of this
+software.
+
+================================================================================
+
+SECURITY NOTICE:
+
+This software handles sensitive healthcare data. Users are strongly advised to:
+
+1. Keep the software updated to the latest version
+2. Follow security best practices in deployment
+3. Conduct regular security assessments
+4. Implement proper access controls and monitoring
+5. Report security vulnerabilities responsibly
+
+For security issues, please contact: security@pymedsec.org
+
+================================================================================
+
+EXPORT CONTROL NOTICE:
+
+This software may be subject to export control laws and regulations. Users
+are responsible for compliance with applicable export control requirements
+in their jurisdiction.
+
+================================================================================

@@ -9,7 +9,10 @@ description = "HIPAA/GDPR-ready medical image sanitization and encryption librar
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Healthcare Security Team", email = "security@example.com"}
+    {name = "PyMedSec Contributors", email = "opensource@pymedsec.org"}
+]
+maintainers = [
+    {name = "PyMedSec Development Team", email = "dev@pymedsec.org"}
 ]
 keywords = ["medical", "imaging", "security", "hipaa", "gdpr", "encryption", "dicom", "blockchain"]
 classifiers = [
@@ -70,11 +73,13 @@ blockchain = [
 pymedsec = "pymedsec.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/example/pymedsec"
+Homepage = "https://github.com/Faerque/pymedsec"
 Documentation = "https://pymedsec.readthedocs.io/"
-Repository = "https://github.com/example/pymedsec.git"
-Issues = "https://github.com/example/pymedsec/issues"
-Changelog = "https://github.com/example/pymedsec/blob/main/CHANGELOG.md"
+Repository = "https://github.com/Faerque/pymedsec.git"
+Issues = "https://github.com/Faerque/pymedsec/issues"
+Security = "https://github.com/Faerque/pymedsec/security/policy"
+Changelog = "https://github.com/Faerque/pymedsec/blob/main/CHANGELOG.md"
+"Source Code" = "https://github.com/Faerque/pymedsec"
 
 [tool.setuptools.packages.find]
 include = ["pymedsec*"]
