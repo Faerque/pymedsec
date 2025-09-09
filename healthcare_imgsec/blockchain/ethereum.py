@@ -6,6 +6,14 @@ import os
 import logging
 from .base import BlockchainAdapter
 
+# Try to import web3 at module level
+try:
+    from web3 import Web3
+    WEB3_AVAILABLE = True
+except ImportError:
+    Web3 = None
+    WEB3_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,15 +24,14 @@ class EthereumBlockchainAdapter(BlockchainAdapter):
         """Initialize Ethereum blockchain adapter."""
         super().__init__(config)
 
-        # Import web3 dynamically for optional dependency
-        try:
-            from web3 import Web3
-            self.Web3 = Web3
-        except ImportError:
+        # Check if web3 is available
+        if not WEB3_AVAILABLE:
             raise ImportError(
                 "web3.py is required for Ethereum blockchain support. "
                 "Install with: pip install web3"
             )
+
+        self.Web3 = Web3
 
         # Get configuration
         self.rpc_url = self.config.get(
@@ -56,30 +63,27 @@ class EthereumBlockchainAdapter(BlockchainAdapter):
             self.account = None
             logger.warning("No private key configured - read-only mode")
 
-    def submit_digest(self, digest_hex, metadata=None):
+    def submit_digest(self, digest, metadata=None):
         """
         Submit digest to Ethereum blockchain.
 
         Args:
-            digest_hex: SHA-256 digest as hex string
+            digest: SHA-256 digest as hex string
             metadata: Additional metadata
 
         Returns:
             dict: Transaction details
         """
-        if not self.validate_digest(digest_hex):
+        if not self.validate_digest(digest):
             raise ValueError("Invalid digest format")
 
         if not self.account:
             raise ValueError("No private key configured for transactions")
 
         try:
-            # Convert digest to bytes
-            digest_bytes = bytes.fromhex(digest_hex)
-
             # Build transaction data (simple data field approach)
-            # Format: "AUDIT:" + digest_hex
-            tx_data = f"AUDIT:{digest_hex}".encode('utf-8')
+            # Format: "AUDIT:" + digest
+            tx_data = f"AUDIT:{digest}".encode('utf-8')
 
             # Build transaction
             transaction = {

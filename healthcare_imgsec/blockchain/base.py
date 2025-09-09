@@ -17,19 +17,17 @@ class BlockchainAdapter(ABC):
         """
         self.config = config or {}
 
-    @abstractmethod
-    def submit_digest(self, digest_hex, metadata=None):
-        """
-        Submit a digest to the blockchain.
-
+    def submit_digest(self, digest, metadata=None):
+        """Submit a digest to the blockchain.
+        
         Args:
-            digest_hex: SHA-256 digest as hex string
-            metadata: Additional metadata (optional)
-
+            digest (str): The digest to submit
+            metadata (dict, optional): Additional metadata
+            
         Returns:
-            dict: Transaction details including tx_hash
+            dict: Transaction details with 'tx_id' and 'status'
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def verify_digest(self, digest_hex, tx_hash):
@@ -43,7 +41,7 @@ class BlockchainAdapter(ABC):
         Returns:
             dict: Verification results
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_transaction_status(self, tx_hash):
@@ -51,14 +49,14 @@ class BlockchainAdapter(ABC):
         Get the status of a blockchain transaction.
 
         Args:
-            tx_hash: Transaction hash
+            tx_hash: Transaction hash to check
 
         Returns:
-            dict: Transaction status
+            dict: Status information
         """
-        pass
+        raise NotImplementedError
 
-    def validate_digest(self, digest_hex):
+    def validate_digest(self, digest_hex: str) -> bool:
         """
         Validate digest format.
 

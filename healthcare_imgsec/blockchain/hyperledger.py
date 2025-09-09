@@ -17,7 +17,7 @@ class HyperledgerBlockchainAdapter(BlockchainAdapter):
             "This is a placeholder for future development."
         )
 
-    def submit_digest(self, digest_hex, metadata=None):
+    def submit_digest(self, digest, metadata=None):
         """Submit digest to Hyperledger Fabric blockchain."""
         raise NotImplementedError("Hyperledger Fabric support not implemented")
 

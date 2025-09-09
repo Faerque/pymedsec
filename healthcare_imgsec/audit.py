@@ -269,7 +269,7 @@ class AuditLogger:
                 'is_valid': True
             }
 
-            for i, line in enumerate(lines[start_line-1:end_line], start_line):
+            for i, line in enumerate(lines[start_line - 1:end_line], start_line):
                 try:
                     entry = json.loads(line.strip())
                     stored_hmac = entry.pop('hmac_sha256', None)

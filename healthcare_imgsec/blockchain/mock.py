@@ -40,29 +40,29 @@ class MockBlockchainAdapter(BlockchainAdapter):
         with open(self.storage_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
 
-    def submit_digest(self, digest_hex, metadata=None):
+    def submit_digest(self, digest, metadata=None):
         """
         Submit digest to mock blockchain.
 
         Args:
-            digest_hex: SHA-256 digest as hex string
+            digest: SHA-256 digest as hex string
             metadata: Additional metadata
 
         Returns:
             dict: Mock transaction details
         """
-        if not self.validate_digest(digest_hex):
+        if not self.validate_digest(digest):
             raise ValueError("Invalid digest format")
 
         # Generate mock transaction hash
         timestamp = str(time.time())
-        tx_data = f"{digest_hex}:{timestamp}"
+        tx_data = f"{digest}:{timestamp}"
         tx_hash = hashlib.sha256(tx_data.encode()).hexdigest()
 
         # Store in mock blockchain
         storage = self._load_storage()
         storage[tx_hash] = {
-            'digest': digest_hex,
+            'digest': digest,
             'timestamp': timestamp,
             'block_number': len(storage) + 1,
             'confirmations': 1,
