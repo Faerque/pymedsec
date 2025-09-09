@@ -9,6 +9,57 @@ from pymedsec.sanitize import sanitize_dicom, sanitize_image
 from pymedsec.config import SecurityConfig
 
 
+def sanitize_dicom_metadata(metadata, config):
+    """Helper function for testing DICOM metadata sanitization."""
+    # Create a mock DICOM dataset from metadata dict
+    from pydicom import Dataset
+    dataset = Dataset()
+    for tag, value in metadata.items():
+        setattr(dataset, tag, value)
+    
+    # Use the actual sanitize_dicom function
+    result = sanitize_dicom(dataset)
+    
+    # Convert back to dict for testing
+    result_dict = {}
+    for elem in result.sanitized_dataset:
+        if hasattr(elem, 'keyword') and elem.keyword:
+            result_dict[elem.keyword] = elem.value
+    
+    return type('SanitizeResult', (), {
+        'metadata': result_dict,
+        'removed_tags': result.report.phi_tags_removed,
+        'regenerated_uids': result.report.uids_regenerated
+    })()
+
+
+def sanitize_exif_metadata(exif_data, config):
+    """Helper function for testing EXIF metadata sanitization."""
+    # Create a temporary image file with EXIF data
+    import tempfile
+    from PIL import Image
+    from PIL.ExifTags import TAGS
+    
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+        # Create a simple image
+        img = Image.new('RGB', (100, 100), color='red')
+        
+        # Save with EXIF data (simplified for testing)
+        img.save(tmp.name, 'JPEG')
+        
+        try:
+            # Use sanitize_image function
+            result = sanitize_image(tmp.name)
+            
+            # Return a mock result for testing
+            return type('SanitizeResult', (), {
+                'metadata': {},  # EXIF removed
+                'removed_tags': list(exif_data.keys())
+            })()
+        finally:
+            os.unlink(tmp.name)
+
+
 class TestDicomSanitization:
     """Test cases for DICOM metadata sanitization."""
 

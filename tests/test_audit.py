@@ -8,7 +8,13 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 import pytest
 
-from pymedsec.audit import AuditLogger
+from pymedsec.audit import (
+    AuditLogger, 
+    verify_audit_integrity, 
+    verify_blockchain_anchors,
+    generate_audit_signature,
+    verify_audit_chain
+)
 from pymedsec.config import SecurityConfig
 
 

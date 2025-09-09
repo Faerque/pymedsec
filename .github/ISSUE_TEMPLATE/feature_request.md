@@ -4,7 +4,6 @@ about: Suggest an idea for PyMedSec
 title: '[FEATURE] '
 labels: 'enhancement'
 assignees: ''
-
 ---
 
 ## Feature Description

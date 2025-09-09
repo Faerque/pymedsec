@@ -251,6 +251,21 @@ class AuditLogger:
 
         self._write_audit_line(operation, data)
 
+    def log_event(self, event_data):
+        """Log an event with custom data. Alias for log_operation."""
+        operation = event_data.pop('action', 'UNKNOWN_EVENT')
+        self.log_operation(operation, **event_data)
+
+    @property
+    def log_file(self):
+        """Get the audit log file path."""
+        return str(self.audit_path)
+
+    @property
+    def config(self):
+        """Get the configuration object."""
+        return config.get_config()
+
     def verify_integrity(self, start_line=None, end_line=None):
         """Verify HMAC integrity of audit log lines."""
         try:
@@ -570,3 +585,74 @@ def search_audit_logs(query_filters):
     except Exception as e:
         logger.error("Failed to search audit logs: %s", e)
         raise
+
+
+def generate_audit_signature(entry_data, config_obj):
+    """Generate HMAC signature for audit entry data.
+    
+    Args:
+        entry_data (dict): Audit entry data
+        config_obj: Configuration object with audit settings
+        
+    Returns:
+        str: HMAC-SHA256 signature
+    """
+    # Get signing key from config
+    audit_config = getattr(config_obj, 'get_audit_config', lambda: {})()
+    signing_key = audit_config.get('signing_key', 'default_key')
+    
+    # Serialize entry data
+    entry_json = json.dumps(entry_data, sort_keys=True, separators=(',', ':'))
+    
+    # Generate HMAC signature
+    signature = hmac.new(
+        signing_key.encode('utf-8'),
+        entry_json.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    
+    return signature
+
+
+def verify_audit_chain(audit_file_path, config_obj):
+    """Verify the integrity of an audit log chain.
+    
+    Args:
+        audit_file_path (str): Path to audit log file
+        config_obj: Configuration object with audit settings
+        
+    Returns:
+        bool: True if chain is valid, False otherwise
+    """
+    try:
+        audit_config = getattr(config_obj, 'get_audit_config', lambda: {})()
+        signing_key = audit_config.get('signing_key', 'default_key')
+        
+        with open(audit_file_path, 'r') as f:
+            for line_num, line in enumerate(f, 1):
+                try:
+                    entry = json.loads(line.strip())
+                    
+                    # Extract signature
+                    stored_signature = entry.pop('hmac_sha256', None)
+                    if not stored_signature:
+                        return False
+                    
+                    # Recompute signature
+                    entry_json = json.dumps(entry, sort_keys=True, separators=(',', ':'))
+                    computed_signature = hmac.new(
+                        signing_key.encode('utf-8'),
+                        entry_json.encode('utf-8'),
+                        hashlib.sha256
+                    ).hexdigest()
+                    
+                    if stored_signature != computed_signature:
+                        return False
+                        
+                except (json.JSONDecodeError, KeyError):
+                    return False
+        
+        return True
+        
+    except Exception:
+        return False

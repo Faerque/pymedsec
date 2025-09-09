@@ -29,7 +29,7 @@ PyMedSec handles sensitive medical data and security vulnerabilities could impac
 ### Response Timeline
 
 - **Acknowledgment**: Within 24 hours
-- **Initial Assessment**: Within 72 hours  
+- **Initial Assessment**: Within 72 hours
 - **Status Updates**: Every 7 days until resolution
 - **Fix Timeline**: Critical issues within 14 days, others within 30 days
 

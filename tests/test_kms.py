@@ -10,6 +10,9 @@ from pymedsec.kms.mock import MockKMSAdapter
 from pymedsec.kms.aws_kms import AWSKMSAdapter
 from pymedsec.kms.vault import VaultAdapter
 
+# Create alias for backward compatibility
+VaultKMSAdapter = VaultAdapter
+
 
 class TestKMSAdapterBase:
     """Test cases for base KMS adapter interface."""

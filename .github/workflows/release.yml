@@ -9,57 +9,57 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-    
-    - name: Build package
-      run: python -m build
-    
-    - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: twine upload dist/*
-    
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ## What's Changed
-          
-          See [CHANGELOG.md](https://github.com/Faerque/pymedsec/blob/main/CHANGELOG.md) for full details.
-          
-          ## Installation
-          
-          ```bash
-          pip install pymedsec
-          ```
-          
-          ## Quick Start
-          
-          ```python
-          from pymedsec import PyMedSec
-          
-          # Initialize with HIPAA policy
-          pms = PyMedSec(policy="hipaa")
-          
-          # Sanitize medical image
-          result = pms.sanitize_file("patient_scan.dcm")
-          print(f"Sanitized: {result.output_path}")
-          ```
-          
-        draft: false
-        prerelease: false
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## What's Changed
+
+            See [CHANGELOG.md](https://github.com/Faerque/pymedsec/blob/main/CHANGELOG.md) for full details.
+
+            ## Installation
+
+            ```bash
+            pip install pymedsec
+            ```
+
+            ## Quick Start
+
+            ```python
+            from pymedsec import PyMedSec
+
+            # Initialize with HIPAA policy
+            pms = PyMedSec(policy="hipaa")
+
+            # Sanitize medical image
+            result = pms.sanitize_file("patient_scan.dcm")
+            print(f"Sanitized: {result.output_path}")
+            ```
+
+          draft: false
+          prerelease: false
