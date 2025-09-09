@@ -1,6 +1,7 @@
 CHANGELOG.md
 LICENSE
 MANIFEST.in
+NOTICE
 PUBLISHING.md
 README.md
 pyproject.toml
@@ -50,5 +51,6 @@ tests/test_audit.py
 tests/test_blockchain.py
 tests/test_crypto.py
 tests/test_kms.py
+tests/test_kms_fixed.py
 tests/test_public_api.py
 tests/test_sanitize.py

@@ -33,8 +33,7 @@ class EncryptedImageLoader:
         self.current_index = 0
 
         if batch_size != 1:
-            logger.warning(
-                "Batch sizes > 1 not yet implemented, using batch_size=1")
+            logger.warning("Batch sizes > 1 not yet implemented, using batch_size=1")
             self.batch_size = 1
 
     def __len__(self):
@@ -57,7 +56,7 @@ class EncryptedImageLoader:
         try:
             # Load encrypted package
             if isinstance(encrypted_file, (str, Path)):
-                with open(encrypted_file, 'r', encoding='utf-8') as f:
+                with open(encrypted_file, "r", encoding="utf-8") as f:
                     package_json = f.read()
                 package = crypto.EncryptedPackage.from_json(package_json)
                 file_path = str(encrypted_file)
@@ -68,9 +67,10 @@ class EncryptedImageLoader:
             # Verify integrity if requested
             if self.verify_integrity:
                 verification_result = crypto.verify_package_integrity(package)
-                if not verification_result['is_valid']:
+                if not verification_result["is_valid"]:
                     raise RuntimeError(
-                        f"Package integrity verification failed: {verification_result['errors']}")
+                        f"Package integrity verification failed: {verification_result['errors']}"
+                    )
 
             # Decrypt in memory
             plaintext_data = crypto.decrypt_data(package, verify_aad=True)
@@ -83,33 +83,28 @@ class EncryptedImageLoader:
             tensor = intake.to_tensor(plaintext_data, format_hint=format_hint)
 
             # Zeroize plaintext data
-            plaintext_data = b'\x00' * len(plaintext_data)
+            plaintext_data = b"\x00" * len(plaintext_data)
             del plaintext_data
 
-            logger.debug("Loaded encrypted image: %s, tensor shape: %s",
-                         file_path, tensor.shape)
+            logger.debug(
+                "Loaded encrypted image: %s, tensor shape: %s", file_path, tensor.shape
+            )
 
-            return {
-                'tensor': tensor,
-                'metadata': metadata,
-                'file_path': file_path
-            }
+            return {"tensor": tensor, "metadata": metadata, "file_path": file_path}
 
         except Exception as e:
-            logger.error("Failed to load encrypted image %s: %s",
-                         encrypted_file, e)
+            logger.error("Failed to load encrypted image %s: %s", encrypted_file, e)
             raise
 
     def _infer_format_from_metadata(self, metadata):
         """Infer image format from package metadata."""
-        modality = metadata.get('modality', 'OT')
+        modality = metadata.get("modality", "OT")
 
         # Common DICOM modalities
-        dicom_modalities = ['CT', 'MR', 'US',
-                            'XA', 'DX', 'CR', 'MG', 'PT', 'NM']
+        dicom_modalities = ["CT", "MR", "US", "XA", "DX", "CR", "MG", "PT", "NM"]
 
         if modality in dicom_modalities:
-            return 'dicom'
+            return "dicom"
         else:
             # Default to generic image format
             return None
@@ -117,21 +112,17 @@ class EncryptedImageLoader:
     def get_dataset_info(self):
         """Get information about the encrypted dataset."""
         info = {
-            'total_files': len(self.encrypted_files),
-            'modalities': {},
-            'datasets': {},
-            'policies': {},
-            'size_stats': {
-                'min_bytes': float('inf'),
-                'max_bytes': 0,
-                'total_bytes': 0
-            }
+            "total_files": len(self.encrypted_files),
+            "modalities": {},
+            "datasets": {},
+            "policies": {},
+            "size_stats": {"min_bytes": float("inf"), "max_bytes": 0, "total_bytes": 0},
         }
 
         for encrypted_file in self.encrypted_files:
             try:
                 if isinstance(encrypted_file, (str, Path)):
-                    with open(encrypted_file, 'r', encoding='utf-8') as f:
+                    with open(encrypted_file, "r", encoding="utf-8") as f:
                         package_json = f.read()
                     package = crypto.EncryptedPackage.from_json(package_json)
                 else:
@@ -141,43 +132,49 @@ class EncryptedImageLoader:
                 metadata = crypto.extract_package_metadata(package)
 
                 # Count modalities
-                modality = metadata.get('modality', 'Unknown')
-                info['modalities'][modality] = info['modalities'].get(
-                    modality, 0) + 1
+                modality = metadata.get("modality", "Unknown")
+                info["modalities"][modality] = info["modalities"].get(modality, 0) + 1
 
                 # Count datasets
-                dataset_id = metadata.get('dataset_id', 'Unknown')
-                info['datasets'][dataset_id] = info['datasets'].get(
-                    dataset_id, 0) + 1
+                dataset_id = metadata.get("dataset_id", "Unknown")
+                info["datasets"][dataset_id] = info["datasets"].get(dataset_id, 0) + 1
 
                 # Count policies
-                policy = metadata.get('policy', 'Unknown')
-                info['policies'][policy] = info['policies'].get(policy, 0) + 1
+                policy = metadata.get("policy", "Unknown")
+                info["policies"][policy] = info["policies"].get(policy, 0) + 1
 
                 # Size statistics
-                package_size = len(package_json.encode('utf-8'))
-                info['size_stats']['min_bytes'] = min(
-                    info['size_stats']['min_bytes'], package_size)
-                info['size_stats']['max_bytes'] = max(
-                    info['size_stats']['max_bytes'], package_size)
-                info['size_stats']['total_bytes'] += package_size
+                package_size = len(package_json.encode("utf-8"))
+                info["size_stats"]["min_bytes"] = min(
+                    info["size_stats"]["min_bytes"], package_size
+                )
+                info["size_stats"]["max_bytes"] = max(
+                    info["size_stats"]["max_bytes"], package_size
+                )
+                info["size_stats"]["total_bytes"] += package_size
 
             except Exception as e:
                 logger.warning("Failed to analyze encrypted file: %s", e)
                 continue
 
         # Calculate average
-        if info['total_files'] > 0:
-            info['size_stats']['avg_bytes'] = info['size_stats']['total_bytes'] / \
-                info['total_files']
+        if info["total_files"] > 0:
+            info["size_stats"]["avg_bytes"] = (
+                info["size_stats"]["total_bytes"] / info["total_files"]
+            )
         else:
-            info['size_stats']['avg_bytes'] = 0
+            info["size_stats"]["avg_bytes"] = 0
 
         return info
 
 
-def iter_encrypted(encrypted_files, reader_fn=None, format_hint=None,
-                   verify_integrity=True, batch_size=1):
+def iter_encrypted(
+    encrypted_files,
+    reader_fn=None,
+    format_hint=None,
+    verify_integrity=True,
+    batch_size=1,
+):
     """
     Iterate over encrypted files with custom reader function.
 
@@ -201,7 +198,7 @@ def iter_encrypted(encrypted_files, reader_fn=None, format_hint=None,
         try:
             # Load encrypted package
             if isinstance(encrypted_file, (str, Path)):
-                with open(encrypted_file, 'r', encoding='utf-8') as f:
+                with open(encrypted_file, "r", encoding="utf-8") as f:
                     package_json = f.read()
                 package = crypto.EncryptedPackage.from_json(package_json)
             else:
@@ -210,9 +207,12 @@ def iter_encrypted(encrypted_files, reader_fn=None, format_hint=None,
             # Verify integrity if requested
             if verify_integrity:
                 verification_result = crypto.verify_package_integrity(package)
-                if not verification_result['is_valid']:
-                    logger.error("Package integrity failed for %s: %s",
-                                 encrypted_file, verification_result['errors'])
+                if not verification_result["is_valid"]:
+                    logger.error(
+                        "Package integrity failed for %s: %s",
+                        encrypted_file,
+                        verification_result["errors"],
+                    )
                     continue
 
             # Decrypt in memory
@@ -225,25 +225,20 @@ def iter_encrypted(encrypted_files, reader_fn=None, format_hint=None,
                 # Default: convert to tensor
                 metadata = crypto.extract_package_metadata(package)
                 inferred_format = format_hint or _infer_format_from_modality(
-                    metadata.get('modality'))
-                tensor = intake.to_tensor(
-                    plaintext_data, format_hint=inferred_format)
+                    metadata.get("modality")
+                )
+                tensor = intake.to_tensor(plaintext_data, format_hint=inferred_format)
 
-                result = {
-                    'tensor': tensor,
-                    'metadata': metadata,
-                    'index': i
-                }
+                result = {"tensor": tensor, "metadata": metadata, "index": i}
 
             # Zeroize plaintext data
-            plaintext_data = b'\x00' * len(plaintext_data)
+            plaintext_data = b"\x00" * len(plaintext_data)
             del plaintext_data
 
             yield result
 
         except Exception as e:
-            logger.error("Failed to process encrypted file %s: %s",
-                         encrypted_file, e)
+            logger.error("Failed to process encrypted file %s: %s", encrypted_file, e)
             continue
 
 
@@ -252,11 +247,10 @@ def _infer_format_from_modality(modality):
     if not modality:
         return None
 
-    dicom_modalities = ['CT', 'MR', 'US', 'XA',
-                        'DX', 'CR', 'MG', 'PT', 'NM', 'RF']
+    dicom_modalities = ["CT", "MR", "US", "XA", "DX", "CR", "MG", "PT", "NM", "RF"]
 
     if modality in dicom_modalities:
-        return 'dicom'
+        return "dicom"
     else:
         return None
 
@@ -276,7 +270,7 @@ def create_pytorch_dataset(encrypted_files, transform=None, verify_integrity=Tru
     return PyTorchEncryptedDataset(
         encrypted_files=encrypted_files,
         transform=transform,
-        verify_integrity=verify_integrity
+        verify_integrity=verify_integrity,
     )
 
 
@@ -297,14 +291,15 @@ class PyTorchEncryptedDataset:
 
         if idx >= len(self.encrypted_files):
             raise IndexError(
-                f"Index {idx} out of range for dataset of size {len(self.encrypted_files)}")
+                f"Index {idx} out of range for dataset of size {len(self.encrypted_files)}"
+            )
 
         encrypted_file = self.encrypted_files[idx]
 
         try:
             # Load and decrypt
             if isinstance(encrypted_file, (str, Path)):
-                with open(encrypted_file, 'r', encoding='utf-8') as f:
+                with open(encrypted_file, "r", encoding="utf-8") as f:
                     package_json = f.read()
                 package = crypto.EncryptedPackage.from_json(package_json)
             else:
@@ -313,16 +308,17 @@ class PyTorchEncryptedDataset:
             # Verify integrity if requested
             if self.verify_integrity:
                 verification_result = crypto.verify_package_integrity(package)
-                if not verification_result['is_valid']:
+                if not verification_result["is_valid"]:
                     raise RuntimeError(
-                        f"Package integrity verification failed: {verification_result['errors']}")
+                        f"Package integrity verification failed: {verification_result['errors']}"
+                    )
 
             # Decrypt in memory
             plaintext_data = crypto.decrypt_data(package, verify_aad=True)
 
             # Convert to tensor
             metadata = crypto.extract_package_metadata(package)
-            format_hint = _infer_format_from_modality(metadata.get('modality'))
+            format_hint = _infer_format_from_modality(metadata.get("modality"))
             tensor = intake.to_tensor(plaintext_data, format_hint=format_hint)
 
             # Apply transform if provided
@@ -330,7 +326,7 @@ class PyTorchEncryptedDataset:
                 tensor = self.transform(tensor)
 
             # Zeroize plaintext data
-            plaintext_data = b'\x00' * len(plaintext_data)
+            plaintext_data = b"\x00" * len(plaintext_data)
             del plaintext_data
 
             return tensor, metadata
@@ -344,7 +340,7 @@ class PyTorchEncryptedDataset:
         encrypted_file = self.encrypted_files[idx]
 
         if isinstance(encrypted_file, (str, Path)):
-            with open(encrypted_file, 'r', encoding='utf-8') as f:
+            with open(encrypted_file, "r", encoding="utf-8") as f:
                 package_json = f.read()
             package = crypto.EncryptedPackage.from_json(package_json)
         else:
@@ -365,36 +361,30 @@ def validate_loader_policy_compliance(loader_config):
     """
     cfg = config.get_config()
 
-    results = {
-        'is_compliant': True,
-        'violations': [],
-        'warnings': []
-    }
+    results = {"is_compliant": True, "violations": [], "warnings": []}
 
     # Check memory-only requirement
     if not cfg.allows_plaintext_disk():
-        if loader_config.get('cache_plaintext', False):
-            results['violations'].append(
-                "Plaintext caching not allowed by policy")
-            results['is_compliant'] = False
+        if loader_config.get("cache_plaintext", False):
+            results["violations"].append("Plaintext caching not allowed by policy")
+            results["is_compliant"] = False
 
-        if loader_config.get('write_temp_files', False):
-            results['violations'].append(
-                "Temporary file writes not allowed by policy")
-            results['is_compliant'] = False
+        if loader_config.get("write_temp_files", False):
+            results["violations"].append("Temporary file writes not allowed by policy")
+            results["is_compliant"] = False
 
     # Check integrity verification requirement
-    if cfg.policy.get('security', {}).get('require_integrity_verification', True):
-        if not loader_config.get('verify_integrity', True):
-            results['violations'].append(
-                "Integrity verification required by policy")
-            results['is_compliant'] = False
+    if cfg.policy.get("security", {}).get("require_integrity_verification", True):
+        if not loader_config.get("verify_integrity", True):
+            results["violations"].append("Integrity verification required by policy")
+            results["is_compliant"] = False
 
     # Check batch size limits
-    max_batch_size = cfg.policy.get('security', {}).get('max_batch_size', 32)
-    if loader_config.get('batch_size', 1) > max_batch_size:
-        results['violations'].append(
-            f"Batch size exceeds policy limit: {max_batch_size}")
-        results['is_compliant'] = False
+    max_batch_size = cfg.policy.get("security", {}).get("max_batch_size", 32)
+    if loader_config.get("batch_size", 1) > max_batch_size:
+        results["violations"].append(
+            f"Batch size exceeds policy limit: {max_batch_size}"
+        )
+        results["is_compliant"] = False
 
     return results

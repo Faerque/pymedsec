@@ -11,23 +11,24 @@ from unittest.mock import Mock, patch
 
 # Import the package modules
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # Set up required environment variables for testing
-os.environ.setdefault('IMGSEC_POLICY', 'mock')
-os.environ.setdefault('IMGSEC_KMS_BACKEND', 'mock')
-os.environ.setdefault('IMGSEC_KMS_KEY_REF', 'test-key')
+os.environ.setdefault("IMGSEC_POLICY", "mock")
+os.environ.setdefault("IMGSEC_KMS_BACKEND", "mock")
+os.environ.setdefault("IMGSEC_KMS_KEY_REF", "test-key")
 
 
 @pytest.fixture(autouse=True)
 def setup_test_environment():
     """Set up the test environment with required variables."""
     test_env = {
-        'IMGSEC_POLICY': 'mock',
-        'IMGSEC_KMS_BACKEND': 'mock',
-        'IMGSEC_KMS_KEY_REF': 'test-key',
-        'IMGSEC_AUDIT_PATH': './test_audit.jsonl',
-        'IMGSEC_ACTOR': 'test-user'
+        "IMGSEC_POLICY": "mock",
+        "IMGSEC_KMS_BACKEND": "mock",
+        "IMGSEC_KMS_KEY_REF": "test-key",
+        "IMGSEC_AUDIT_PATH": "./test_audit.jsonl",
+        "IMGSEC_ACTOR": "test-user",
     }
 
     with patch.dict(os.environ, test_env):
@@ -46,38 +47,22 @@ def temp_dir():
 def mock_config():
     """Create a mock security configuration for testing."""
     config_data = {
-        'encryption': {
-            'algorithm': 'AES-256-GCM',
-            'key_size': 32,
-            'nonce_size': 12
-        },
-        'kms': {
-            'provider': 'mock',
-            'config': {
-                'mock_key_id': 'test-key-123'
-            }
-        },
-        'sanitization': {
-            'dicom': {
-                'remove_private_tags': True,
-                'remove_patient_info': True,
-                'preserve_study_info': False
+        "encryption": {"algorithm": "AES-256-GCM", "key_size": 32, "nonce_size": 12},
+        "kms": {"provider": "mock", "config": {"mock_key_id": "test-key-123"}},
+        "sanitization": {
+            "dicom": {
+                "remove_private_tags": True,
+                "remove_patient_info": True,
+                "preserve_study_info": False,
             },
-            'exif': {
-                'remove_gps': True,
-                'remove_personal': True
-            }
+            "exif": {"remove_gps": True, "remove_personal": True},
         },
-        'audit': {
-            'enabled': True,
-            'log_level': 'INFO',
-            'retention_days': 90
+        "audit": {"enabled": True, "log_level": "INFO", "retention_days": 90},
+        "validation": {
+            "strict_mode": True,
+            "max_file_size": 1073741824,  # 1GB
+            "allowed_formats": ["DICOM", "PNG", "JPEG", "TIFF"],
         },
-        'validation': {
-            'strict_mode': True,
-            'max_file_size': 1073741824,  # 1GB
-            'allowed_formats': ['DICOM', 'PNG', 'JPEG', 'TIFF']
-        }
     }
     return config_data
 
@@ -94,33 +79,29 @@ def sample_dicom_metadata():
     return {
         # Patient Information (should be removed)
         (0x0010, 0x0010): "Smith^John^A",  # Patient Name
-        (0x0010, 0x0020): "12345678",      # Patient ID
-        (0x0010, 0x0030): "19850601",      # Patient Birth Date
-        (0x0010, 0x0040): "M",             # Patient Sex
-
+        (0x0010, 0x0020): "12345678",  # Patient ID
+        (0x0010, 0x0030): "19850601",  # Patient Birth Date
+        (0x0010, 0x0040): "M",  # Patient Sex
         # Study Information (configurable)
         (0x0020, 0x000D): "1.2.3.4.5.6.7.8.9",  # Study Instance UID
-        (0x0020, 0x0010): "STU001",              # Study ID
-        (0x0008, 0x0020): "20240101",            # Study Date
-        (0x0008, 0x0030): "120000",              # Study Time
-
+        (0x0020, 0x0010): "STU001",  # Study ID
+        (0x0008, 0x0020): "20240101",  # Study Date
+        (0x0008, 0x0030): "120000",  # Study Time
         # Technical Information (should be preserved)
-        (0x0028, 0x0010): 512,      # Rows
-        (0x0028, 0x0011): 512,      # Columns
-        (0x0028, 0x0100): 16,       # Bits Allocated
-        (0x0028, 0x0101): 12,       # Bits Stored
-        (0x0028, 0x0102): 11,       # High Bit
-        (0x0028, 0x0103): 0,        # Pixel Representation
-
+        (0x0028, 0x0010): 512,  # Rows
+        (0x0028, 0x0011): 512,  # Columns
+        (0x0028, 0x0100): 16,  # Bits Allocated
+        (0x0028, 0x0101): 12,  # Bits Stored
+        (0x0028, 0x0102): 11,  # High Bit
+        (0x0028, 0x0103): 0,  # Pixel Representation
         # Device Information (should be preserved)
-        (0x0008, 0x0070): "ACME Medical",       # Manufacturer
-        (0x0008, 0x1090): "MRI Scanner 3000",   # Model Name
-        (0x0018, 0x0050): "5.0",                # Slice Thickness
-        (0x0018, 0x0080): "120",                # Repetition Time
-
+        (0x0008, 0x0070): "ACME Medical",  # Manufacturer
+        (0x0008, 0x1090): "MRI Scanner 3000",  # Model Name
+        (0x0018, 0x0050): "5.0",  # Slice Thickness
+        (0x0018, 0x0080): "120",  # Repetition Time
         # Private Tags (should be removed if configured)
         (0x7777, 0x0010): "Private Creator",
-        (0x7777, 0x1001): "Private Data Value"
+        (0x7777, 0x1001): "Private Data Value",
     }
 
 
@@ -129,6 +110,7 @@ def sample_image_data():
     """Create sample image data for testing."""
     # Create a simple 8x8 grayscale image
     import numpy as np
+
     image_array = np.random.randint(0, 256, (8, 8), dtype=np.uint8)
     return image_array.tobytes()
 
@@ -148,14 +130,14 @@ def sample_encrypted_package():
             "metadata": {
                 "original_format": "DICOM",
                 "image_dimensions": "512x512",
-                "bit_depth": 16
-            }
+                "bit_depth": 16,
+            },
         },
         "kms_context": {
             "provider": "mock",
             "key_id": "test-key-123",
-            "region": "us-east-1"
-        }
+            "region": "us-east-1",
+        },
     }
 
 
@@ -171,10 +153,14 @@ def generate_test_dicom_file(temp_dir, metadata=None):
         ds = Dataset()
 
         # Add required DICOM elements
-        ds.PatientName = metadata.get(
-            (0x0010, 0x0010), "Test^Patient") if metadata else "Test^Patient"
-        ds.PatientID = metadata.get(
-            (0x0010, 0x0020), "TEST001") if metadata else "TEST001"
+        ds.PatientName = (
+            metadata.get((0x0010, 0x0010), "Test^Patient")
+            if metadata
+            else "Test^Patient"
+        )
+        ds.PatientID = (
+            metadata.get((0x0010, 0x0020), "TEST001") if metadata else "TEST001"
+        )
         ds.StudyInstanceUID = "1.2.3.4.5.6.7.8.9.10"
         ds.SeriesInstanceUID = "1.2.3.4.5.6.7.8.9.11"
         ds.SOPInstanceUID = "1.2.3.4.5.6.7.8.9.12"
@@ -210,8 +196,9 @@ def generate_test_dicom_file(temp_dir, metadata=None):
         file_meta.MediaStorageSOPInstanceUID = ds.SOPInstanceUID
         file_meta.ImplementationClassUID = "1.2.3.4.5.6.7.8.9.13"
 
-        file_ds = FileDataset(str(file_path), ds, file_meta,
-                              is_implicit_VR=True, is_little_endian=True)
+        file_ds = FileDataset(
+            str(file_path), ds, file_meta, is_implicit_VR=True, is_little_endian=True
+        )
         file_ds.save_as(str(file_path))
 
         return file_path
@@ -231,7 +218,7 @@ def generate_test_image_file(temp_dir, format_type="PNG"):
 
         # Create a simple 8x8 RGB image
         image_array = np.random.randint(0, 256, (8, 8, 3), dtype=np.uint8)
-        image = Image.fromarray(image_array, 'RGB')
+        image = Image.fromarray(image_array, "RGB")
 
         # Add some EXIF data for testing
         if format_type.upper() == "JPEG":
@@ -250,8 +237,9 @@ def generate_test_image_file(temp_dir, format_type="PNG"):
 
     except ImportError:
         # If PIL not available, create a dummy file
-        extension = {"PNG": ".png", "JPEG": ".jpg",
-                     "TIFF": ".tiff"}[format_type.upper()]
+        extension = {"PNG": ".png", "JPEG": ".jpg", "TIFF": ".tiff"}[
+            format_type.upper()
+        ]
         file_path = temp_dir / f"test_image{extension}"
         file_path.write_bytes(b"dummy_image_data" * 100)
         return file_path
@@ -265,11 +253,13 @@ class MockAuditLogger:
         self.logs = []
 
     def log_event(self, action, details=None):
-        self.logs.append({
-            'action': action,
-            'details': details or {},
-            'timestamp': '2024-01-01T00:00:00Z'
-        })
+        self.logs.append(
+            {
+                "action": action,
+                "details": details or {},
+                "timestamp": "2024-01-01T00:00:00Z",
+            }
+        )
 
     def get_logs(self):
         return self.logs
@@ -316,19 +306,20 @@ def assert_technical_metadata_preserved(original_metadata, sanitized_metadata):
     for tag in technical_tags:
         if tag in original_metadata:
             assert tag in sanitized_metadata, f"Technical tag {tag} not preserved"
-            assert original_metadata[tag] == sanitized_metadata[
-                tag], f"Technical tag {tag} value changed"
+            assert (
+                original_metadata[tag] == sanitized_metadata[tag]
+            ), f"Technical tag {tag} value changed"
 
 
 def create_test_audit_log_entry():
     """Create a test audit log entry."""
     return {
-        'timestamp': '2024-01-01T00:00:00.000Z',
-        'action': 'TEST_ACTION',
-        'user': 'test_user@example.com',
-        'resource': 'test_resource.dcm',
-        'outcome': 'SUCCESS',
-        'details': {'test': 'data'},
-        'signature': 'test_signature_hash',
-        'anchor_hash': 'test_anchor_hash'
+        "timestamp": "2024-01-01T00:00:00.000Z",
+        "action": "TEST_ACTION",
+        "user": "test_user@example.com",
+        "resource": "test_resource.dcm",
+        "outcome": "SUCCESS",
+        "details": {"test": "data"},
+        "signature": "test_signature_hash",
+        "anchor_hash": "test_anchor_hash",
     }

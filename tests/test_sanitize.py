@@ -13,6 +13,7 @@ def sanitize_dicom_metadata(metadata, config):
     """Helper function for testing DICOM metadata sanitization."""
     # Create a mock DICOM dataset from metadata dict
     from pydicom import Dataset
+
     dataset = Dataset()
     for tag, value in metadata.items():
         setattr(dataset, tag, value)
@@ -23,14 +24,18 @@ def sanitize_dicom_metadata(metadata, config):
     # Convert back to dict for testing
     result_dict = {}
     for elem in result.sanitized_dataset:
-        if hasattr(elem, 'keyword') and elem.keyword:
+        if hasattr(elem, "keyword") and elem.keyword:
             result_dict[elem.keyword] = elem.value
 
-    return type('SanitizeResult', (), {
-        'metadata': result_dict,
-        'removed_tags': result.report.phi_tags_removed,
-        'regenerated_uids': result.report.uids_regenerated
-    })()
+    return type(
+        "SanitizeResult",
+        (),
+        {
+            "metadata": result_dict,
+            "removed_tags": result.report.phi_tags_removed,
+            "regenerated_uids": result.report.uids_regenerated,
+        },
+    )()
 
 
 def sanitize_exif_metadata(exif_data, config):
@@ -40,22 +45,26 @@ def sanitize_exif_metadata(exif_data, config):
     from PIL import Image
     from PIL.ExifTags import TAGS
 
-    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
         # Create a simple image
-        img = Image.new('RGB', (100, 100), color='red')
+        img = Image.new("RGB", (100, 100), color="red")
 
         # Save with EXIF data (simplified for testing)
-        img.save(tmp.name, 'JPEG')
+        img.save(tmp.name, "JPEG")
 
         try:
             # Use sanitize_image function
             result = sanitize_image(tmp.name)
 
             # Return a mock result for testing
-            return type('SanitizeResult', (), {
-                'metadata': {},  # EXIF removed
-                'removed_tags': list(exif_data.keys())
-            })()
+            return type(
+                "SanitizeResult",
+                (),
+                {
+                    "metadata": {},  # EXIF removed
+                    "removed_tags": list(exif_data.keys()),
+                },
+            )()
         finally:
             os.unlink(tmp.name)
 
@@ -92,8 +101,9 @@ class TestDicomSanitization:
         for tag in technical_tags:
             if tag in sample_dicom_metadata:
                 assert tag in result, f"Technical tag {tag} was removed"
-                assert result[tag] == sample_dicom_metadata[
-                    tag], f"Technical tag {tag} value changed"
+                assert (
+                    result[tag] == sample_dicom_metadata[tag]
+                ), f"Technical tag {tag} value changed"
 
     def test_private_tags_removal(self, mock_config, sample_dicom_metadata):
         """Test removal of private DICOM tags."""
@@ -124,8 +134,9 @@ class TestDicomSanitization:
         for tag in study_tags:
             if tag in result:
                 # If present, should be anonymized (different from original)
-                assert result[tag] != sample_dicom_metadata[
-                    tag], f"Study tag {tag} not anonymized"
+                assert (
+                    result[tag] != sample_dicom_metadata[tag]
+                ), f"Study tag {tag} not anonymized"
 
     def test_empty_metadata_handling(self, mock_config):
         """Test handling of empty metadata."""
@@ -139,26 +150,26 @@ class TestDicomSanitization:
         # Mock different sanitization configurations
         basic_config = Mock()
         basic_config.get_sanitization_config.return_value = {
-            'dicom': {
-                'remove_private_tags': False,
-                'remove_patient_info': True,
-                'preserve_study_info': True
+            "dicom": {
+                "remove_private_tags": False,
+                "remove_patient_info": True,
+                "preserve_study_info": True,
             }
         }
 
         aggressive_config = Mock()
         aggressive_config.get_sanitization_config.return_value = {
-            'dicom': {
-                'remove_private_tags': True,
-                'remove_patient_info': True,
-                'preserve_study_info': False
+            "dicom": {
+                "remove_private_tags": True,
+                "remove_patient_info": True,
+                "preserve_study_info": False,
             }
         }
 
-        basic_result = sanitize_dicom_metadata(
-            sample_dicom_metadata, basic_config)
+        basic_result = sanitize_dicom_metadata(sample_dicom_metadata, basic_config)
         aggressive_result = sanitize_dicom_metadata(
-            sample_dicom_metadata, aggressive_config)
+            sample_dicom_metadata, aggressive_config
+        )
 
         # Aggressive should remove more elements than basic
         assert len(aggressive_result) <= len(basic_result)
@@ -166,14 +177,15 @@ class TestDicomSanitization:
     def test_pseudonymization(self, mock_config, sample_dicom_metadata):
         """Test patient ID pseudonymization."""
         # Configure for pseudonymization instead of removal
-        mock_config.get_sanitization_config.return_value['dicom']['pseudonymize_ids'] = True
+        mock_config.get_sanitization_config.return_value["dicom"][
+            "pseudonymize_ids"
+        ] = True
 
         result = sanitize_dicom_metadata(sample_dicom_metadata, mock_config)
 
         # Patient ID should be pseudonymized (present but different)
         if (0x0010, 0x0020) in result:
-            assert result[(0x0010, 0x0020)
-                          ] != sample_dicom_metadata[(0x0010, 0x0020)]
+            assert result[(0x0010, 0x0020)] != sample_dicom_metadata[(0x0010, 0x0020)]
             assert len(result[(0x0010, 0x0020)]) > 0  # Should have some value
 
 
@@ -183,39 +195,39 @@ class TestExifSanitization:
     def test_gps_removal(self, mock_config):
         """Test removal of GPS coordinates from EXIF."""
         exif_data = {
-            'GPSInfo': {
-                'GPSLatitude': [40, 45, 30],
-                'GPSLongitude': [74, 0, 21],
-                'GPSAltitude': 10
+            "GPSInfo": {
+                "GPSLatitude": [40, 45, 30],
+                "GPSLongitude": [74, 0, 21],
+                "GPSAltitude": 10,
             },
-            'Make': 'Canon',
-            'Model': 'EOS 5D',
-            'DateTime': '2024:01:01 12:00:00'
+            "Make": "Canon",
+            "Model": "EOS 5D",
+            "DateTime": "2024:01:01 12:00:00",
         }
 
         result = sanitize_exif_metadata(exif_data, mock_config)
 
-        assert 'GPSInfo' not in result, "GPS information was not removed"
+        assert "GPSInfo" not in result, "GPS information was not removed"
 
     def test_personal_info_removal(self, mock_config):
         """Test removal of personal information from EXIF."""
         exif_data = {
-            'Artist': 'John Photographer',
-            'Copyright': 'Copyright John Doe 2024',
-            'UserComment': 'Photo taken at hospital',
-            'Make': 'Canon',
-            'Model': 'EOS 5D'
+            "Artist": "John Photographer",
+            "Copyright": "Copyright John Doe 2024",
+            "UserComment": "Photo taken at hospital",
+            "Make": "Canon",
+            "Model": "EOS 5D",
         }
 
         result = sanitize_exif_metadata(exif_data, mock_config)
 
         # Personal info should be removed
-        personal_tags = ['Artist', 'Copyright', 'UserComment']
+        personal_tags = ["Artist", "Copyright", "UserComment"]
         for tag in personal_tags:
             assert tag not in result, f"Personal tag {tag} was not removed"
 
         # Technical info should be preserved
-        technical_tags = ['Make', 'Model']
+        technical_tags = ["Make", "Model"]
         for tag in technical_tags:
             if tag in exif_data:
                 assert tag in result, f"Technical tag {tag} was removed"
@@ -223,17 +235,19 @@ class TestExifSanitization:
     def test_timestamp_handling(self, mock_config):
         """Test handling of timestamp information in EXIF."""
         exif_data = {
-            'DateTime': '2024:01:01 12:00:00',
-            'DateTimeOriginal': '2024:01:01 11:55:00',
-            'DateTimeDigitized': '2024:01:01 12:05:00'
+            "DateTime": "2024:01:01 12:00:00",
+            "DateTimeOriginal": "2024:01:01 11:55:00",
+            "DateTimeDigitized": "2024:01:01 12:05:00",
         }
 
         # Configure to remove timestamps
-        mock_config.get_sanitization_config.return_value['exif']['remove_timestamps'] = True
+        mock_config.get_sanitization_config.return_value["exif"][
+            "remove_timestamps"
+        ] = True
 
         result = sanitize_exif_metadata(exif_data, mock_config)
 
-        timestamp_tags = ['DateTime', 'DateTimeOriginal', 'DateTimeDigitized']
+        timestamp_tags = ["DateTime", "DateTimeOriginal", "DateTimeDigitized"]
         for tag in timestamp_tags:
             assert tag not in result, f"Timestamp tag {tag} was not removed"
 
@@ -254,20 +268,20 @@ class TestImageSanitization:
         dicom_file = temp_dir / "test.dcm"
         dicom_file.write_bytes(b"DICM" + b"test_dicom_data" * 100)
 
-        with patch('pymedsec.sanitize.pydicom') as mock_pydicom:
+        with patch("pymedsec.sanitize.pydicom") as mock_pydicom:
             # Mock pydicom operations
             mock_dataset = Mock()
             mock_dataset.to_dict.return_value = {
                 (0x0010, 0x0010): "Test^Patient",
-                (0x0028, 0x0010): 512
+                (0x0028, 0x0010): 512,
             }
             mock_pydicom.dcmread.return_value = mock_dataset
 
             result = sanitize_image(str(dicom_file), mock_config)
 
-            assert result['status'] == 'success'
-            assert result['format'] == 'DICOM'
-            assert 'sanitized_metadata' in result
+            assert result["status"] == "success"
+            assert result["format"] == "DICOM"
+            assert "sanitized_metadata" in result
 
     def test_non_dicom_image_sanitization(self, mock_config, temp_dir):
         """Test sanitization of non-DICOM images."""
@@ -275,17 +289,17 @@ class TestImageSanitization:
         png_file = temp_dir / "test.png"
         png_file.write_bytes(b"PNG_test_data" * 50)
 
-        with patch('pymedsec.sanitize.Image') as mock_image:
+        with patch("pymedsec.sanitize.Image") as mock_image:
             # Mock PIL operations
             mock_img = Mock()
             mock_img.format = "PNG"
-            mock_img.info = {'Author': 'Test Author'}
+            mock_img.info = {"Author": "Test Author"}
             mock_image.open.return_value = mock_img
 
             result = sanitize_image(str(png_file), mock_config)
 
-            assert result['status'] == 'success'
-            assert result['format'] == 'PNG'
+            assert result["status"] == "success"
+            assert result["format"] == "PNG"
 
     def test_unsupported_format_handling(self, mock_config, temp_dir):
         """Test handling of unsupported file formats."""
@@ -295,8 +309,8 @@ class TestImageSanitization:
 
         result = sanitize_image(str(unsupported_file), mock_config)
 
-        assert result['status'] == 'error'
-        assert 'unsupported' in result['message'].lower()
+        assert result["status"] == "error"
+        assert "unsupported" in result["message"].lower()
 
     def test_corrupted_file_handling(self, mock_config, temp_dir):
         """Test handling of corrupted image files."""
@@ -304,14 +318,16 @@ class TestImageSanitization:
         corrupted_file = temp_dir / "corrupted.jpg"
         corrupted_file.write_bytes(b"corrupted_jpeg_data")
 
-        with patch('pymedsec.sanitize.Image.open') as mock_open:
+        with patch("pymedsec.sanitize.Image.open") as mock_open:
             mock_open.side_effect = Exception("Cannot identify image file")
 
             result = sanitize_image(str(corrupted_file), mock_config)
 
-            assert result['status'] == 'error'
-            assert 'corrupted' in result['message'].lower(
-            ) or 'cannot' in result['message'].lower()
+            assert result["status"] == "error"
+            assert (
+                "corrupted" in result["message"].lower()
+                or "cannot" in result["message"].lower()
+            )
 
     def test_large_file_handling(self, mock_config, temp_dir):
         """Test handling of large image files."""
@@ -320,15 +336,15 @@ class TestImageSanitization:
         large_file.write_bytes(b"DICM" + b"x" * (10 * 1024 * 1024))  # 10MB
 
         # Mock file size check
-        with patch('os.path.getsize') as mock_getsize:
+        with patch("os.path.getsize") as mock_getsize:
             mock_getsize.return_value = 2 * 1024 * 1024 * 1024  # 2GB
 
             result = sanitize_image(str(large_file), mock_config)
 
             # Should handle large files gracefully
-            assert result['status'] in ['success', 'error']
-            if result['status'] == 'error':
-                assert 'size' in result['message'].lower()
+            assert result["status"] in ["success", "error"]
+            if result["status"] == "error":
+                assert "size" in result["message"].lower()
 
 
 class TestSanitizationSecurity:
@@ -338,37 +354,39 @@ class TestSanitizationSecurity:
         """Test that all types of PHI are detected and removed."""
         comprehensive_phi_metadata = {
             # Direct identifiers
-            (0x0010, 0x0010): "Doe^John^M",           # Patient Name
-            (0x0010, 0x0020): "123456789",            # Patient ID
-            (0x0010, 0x0030): "19850615",             # Birth Date
-            (0x0010, 0x1000): ["ALT-ID-001"],         # Other Patient IDs
-            (0x0010, 0x1001): ["Doe^Johnny"],         # Other Patient Names
-
+            (0x0010, 0x0010): "Doe^John^M",  # Patient Name
+            (0x0010, 0x0020): "123456789",  # Patient ID
+            (0x0010, 0x0030): "19850615",  # Birth Date
+            (0x0010, 0x1000): ["ALT-ID-001"],  # Other Patient IDs
+            (0x0010, 0x1001): ["Doe^Johnny"],  # Other Patient Names
             # Indirect identifiers
-            (0x0008, 0x0090): "Dr. Smith",            # Referring Physician
+            (0x0008, 0x0090): "Dr. Smith",  # Referring Physician
             # Name of Physician Reading Study
             (0x0008, 0x1060): "Dr. Johnson",
-            (0x0010, 0x1040): "123 Main St",          # Patient Address
-            (0x0010, 0x2154): "(555) 123-4567",       # Patient Phone Numbers
-
+            (0x0010, 0x1040): "123 Main St",  # Patient Address
+            (0x0010, 0x2154): "(555) 123-4567",  # Patient Phone Numbers
             # Dates (quasi-identifiers)
-            (0x0008, 0x0020): "20240101",             # Study Date
-            (0x0008, 0x0021): "20240101",             # Series Date
-            (0x0008, 0x0023): "20240101",             # Content Date
-
+            (0x0008, 0x0020): "20240101",  # Study Date
+            (0x0008, 0x0021): "20240101",  # Series Date
+            (0x0008, 0x0023): "20240101",  # Content Date
             # Technical (should be preserved)
-            (0x0028, 0x0010): 512,                    # Rows
-            (0x0028, 0x0011): 512,                    # Columns
+            (0x0028, 0x0010): 512,  # Rows
+            (0x0028, 0x0011): 512,  # Columns
         }
 
-        result = sanitize_dicom_metadata(
-            comprehensive_phi_metadata, mock_config)
+        result = sanitize_dicom_metadata(comprehensive_phi_metadata, mock_config)
 
         # Verify PHI removal
         phi_tags = [
-            (0x0010, 0x0010), (0x0010, 0x0020), (0x0010, 0x0030),
-            (0x0010, 0x1000), (0x0010, 0x1001), (0x0008, 0x0090),
-            (0x0008, 0x1060), (0x0010, 0x1040), (0x0010, 0x2154)
+            (0x0010, 0x0010),
+            (0x0010, 0x0020),
+            (0x0010, 0x0030),
+            (0x0010, 0x1000),
+            (0x0010, 0x1001),
+            (0x0008, 0x0090),
+            (0x0008, 0x1060),
+            (0x0010, 0x1040),
+            (0x0010, 0x2154),
         ]
 
         for tag in phi_tags:
@@ -393,11 +411,11 @@ class TestSanitizationSecurity:
         """Test that error messages don't leak PHI."""
         phi_metadata = {
             (0x0010, 0x0010): "Sensitive^Patient^Name",
-            (0x0010, 0x0020): "SENSITIVE-ID-123"
+            (0x0010, 0x0020): "SENSITIVE-ID-123",
         }
 
         # Force an error condition
-        with patch('pymedsec.sanitize.process_dicom_tag') as mock_process:
+        with patch("pymedsec.sanitize.process_dicom_tag") as mock_process:
             mock_process.side_effect = Exception("Processing error occurred")
 
             try:
@@ -410,7 +428,7 @@ class TestSanitizationSecurity:
 
     def test_sanitization_audit_logging(self, mock_config, sample_dicom_metadata):
         """Test that sanitization operations are properly audited."""
-        with patch('pymedsec.sanitize.audit_logger') as mock_audit:
+        with patch("pymedsec.sanitize.audit_logger") as mock_audit:
             sanitize_dicom_metadata(sample_dicom_metadata, mock_config)
 
             # Should log sanitization operation
@@ -433,30 +451,28 @@ class TestSanitizationConfiguration:
         # Configure to preserve some typically removed elements
         permissive_config = Mock()
         permissive_config.get_sanitization_config.return_value = {
-            'dicom': {
-                'remove_private_tags': False,
-                'remove_patient_info': False,  # Don't remove patient info
-                'preserve_study_info': True
+            "dicom": {
+                "remove_private_tags": False,
+                "remove_patient_info": False,  # Don't remove patient info
+                "preserve_study_info": True,
             }
         }
 
-        result = sanitize_dicom_metadata(
-            sample_dicom_metadata, permissive_config)
+        result = sanitize_dicom_metadata(sample_dicom_metadata, permissive_config)
 
         # Patient info should be preserved with this configuration
-        assert (0x0010, 0x0010) in result or len(
-            result) > 5  # More data preserved
+        assert (0x0010, 0x0010) in result or len(result) > 5  # More data preserved
 
     def test_strict_sanitization_mode(self, sample_dicom_metadata):
         """Test strict sanitization removes maximum PHI."""
         strict_config = Mock()
         strict_config.get_sanitization_config.return_value = {
-            'dicom': {
-                'remove_private_tags': True,
-                'remove_patient_info': True,
-                'preserve_study_info': False,
-                'remove_dates': True,
-                'remove_physician_info': True
+            "dicom": {
+                "remove_private_tags": True,
+                "remove_patient_info": True,
+                "preserve_study_info": False,
+                "remove_dates": True,
+                "remove_physician_info": True,
             }
         }
 
@@ -479,24 +495,25 @@ class TestSanitizationConfiguration:
         """Test custom tag handling configuration."""
         custom_metadata = {
             (0x0008, 0x0080): "Custom Hospital Name",  # Institution Name
-            (0x0008, 0x0081): "Custom Department",     # Institution Address
-            (0x0018, 0x1000): "DEVICE-SERIAL-123",     # Device Serial Number
+            (0x0008, 0x0081): "Custom Department",  # Institution Address
+            (0x0018, 0x1000): "DEVICE-SERIAL-123",  # Device Serial Number
         }
 
         # Configure custom handling
-        mock_config.get_sanitization_config.return_value['dicom']['custom_tag_actions'] = {
-            (0x0008, 0x0080): 'remove',
-            (0x0008, 0x0081): 'anonymize',
-            (0x0018, 0x1000): 'preserve'
+        mock_config.get_sanitization_config.return_value["dicom"][
+            "custom_tag_actions"
+        ] = {
+            (0x0008, 0x0080): "remove",
+            (0x0008, 0x0081): "anonymize",
+            (0x0018, 0x1000): "preserve",
         }
 
         result = sanitize_dicom_metadata(custom_metadata, mock_config)
 
         # Check custom handling was applied
         assert (0x0008, 0x0080) not in result  # Should be removed
-        assert (0x0018, 0x1000) in result      # Should be preserved
+        assert (0x0018, 0x1000) in result  # Should be preserved
 
         if (0x0008, 0x0081) in result:
             # Should be anonymized (different value)
-            assert result[(0x0008, 0x0081)
-                          ] != custom_metadata[(0x0008, 0x0081)]
+            assert result[(0x0008, 0x0081)] != custom_metadata[(0x0008, 0x0081)]

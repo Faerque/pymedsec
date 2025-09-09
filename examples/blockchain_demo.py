@@ -22,11 +22,11 @@ def setup_blockchain_environment():
     print("🔧 Setting up blockchain environment...")
 
     # Use mock blockchain for demonstration
-    os.environ['BLOCKCHAIN_BACKEND'] = 'mock'
+    os.environ["BLOCKCHAIN_BACKEND"] = "mock"
 
     # Create temporary audit log
     temp_dir = tempfile.mkdtemp()
-    audit_path = os.path.join(temp_dir, 'demo_audit.log')
+    audit_path = os.path.join(temp_dir, "demo_audit.log")
 
     print(f"📁 Temporary audit log: {audit_path}")
     print(f"⛓️  Blockchain backend: mock")
@@ -44,37 +44,35 @@ def demonstrate_blockchain_anchoring(audit_path):
     # Log several operations to demonstrate anchoring
     operations = [
         {
-            'operation': 'sanitize',
-            'dataset_id': 'demo_study_001',
-            'modality': 'CT',
-            'outcome': 'success',
-            'details': 'Removed 15 PHI tags, regenerated UIDs'
+            "operation": "sanitize",
+            "dataset_id": "demo_study_001",
+            "modality": "CT",
+            "outcome": "success",
+            "details": "Removed 15 PHI tags, regenerated UIDs",
         },
         {
-            'operation': 'encrypt',
-            'dataset_id': 'demo_study_001',
-            'modality': 'CT',
-            'outcome': 'success',
-            'details': 'AES-256-GCM encryption with KMS key wrapping'
+            "operation": "encrypt",
+            "dataset_id": "demo_study_001",
+            "modality": "CT",
+            "outcome": "success",
+            "details": "AES-256-GCM encryption with KMS key wrapping",
         },
         {
-            'operation': 'decrypt',
-            'dataset_id': 'demo_study_001',
-            'modality': 'CT',
-            'outcome': 'success',
-            'details': 'Memory-only decryption for ML training'
-        }
+            "operation": "decrypt",
+            "dataset_id": "demo_study_001",
+            "modality": "CT",
+            "outcome": "success",
+            "details": "Memory-only decryption for ML training",
+        },
     ]
 
-    print(
-        f"🔒 Logging {len(operations)} operations with blockchain anchoring...")
+    print(f"🔒 Logging {len(operations)} operations with blockchain anchoring...")
 
     for i, op in enumerate(operations, 1):
         audit_logger.log_operation(**op)
         print(f"  ✓ Operation {i}: {op['operation']} -> blockchain anchored")
 
-    print(
-        f"📊 Audit log created with {len(operations)} blockchain-anchored entries")
+    print(f"📊 Audit log created with {len(operations)} blockchain-anchored entries")
 
 
 def verify_blockchain_integrity(audit_path):
@@ -84,15 +82,15 @@ def verify_blockchain_integrity(audit_path):
     # Verify blockchain anchors
     verification_result = verify_blockchain_anchors(audit_path)
 
-    if not verification_result['blockchain_enabled']:
+    if not verification_result["blockchain_enabled"]:
         print(f"⚠️  Blockchain not enabled: {verification_result['message']}")
         return
 
-    total = verification_result['total_lines']
-    anchored = verification_result['anchored_lines']
-    verified = verification_result['verified_anchors']
-    failed = verification_result['failed_anchors']
-    rate = verification_result['verification_rate']
+    total = verification_result["total_lines"]
+    anchored = verification_result["anchored_lines"]
+    verified = verification_result["verified_anchors"]
+    failed = verification_result["failed_anchors"]
+    rate = verification_result["verification_rate"]
 
     print(f"📊 Verification Results:")
     print(f"  📋 Total audit entries: {total}")
@@ -107,14 +105,14 @@ def verify_blockchain_integrity(audit_path):
         print("⚠️  Blockchain anchor verification issues detected")
 
     # Show anchor details
-    if verification_result['anchor_details']:
+    if verification_result["anchor_details"]:
         print(f"\n🔗 Anchor Details:")
-        for detail in verification_result['anchor_details']:
-            status_icon = "✅" if detail['status'] == 'verified' else "❌"
-            tx_hash_short = detail['tx_hash'][:16] + "..."
+        for detail in verification_result["anchor_details"]:
+            status_icon = "✅" if detail["status"] == "verified" else "❌"
+            tx_hash_short = detail["tx_hash"][:16] + "..."
             print(f"  {status_icon} Line {detail['line']}: {tx_hash_short}")
-            if detail['status'] == 'verified':
-                confirmations = detail.get('confirmations', 0)
+            if detail["status"] == "verified":
+                confirmations = detail.get("confirmations", 0)
                 print(f"     📦 Confirmations: {confirmations}")
 
 
@@ -137,7 +135,7 @@ def demonstrate_blockchain_adapter():
 
     try:
         result = adapter.submit_digest(test_digest, {"test": "demo"})
-        tx_hash = result['tx_hash']
+        tx_hash = result["tx_hash"]
         print(f"✅ Digest submitted successfully")
         print(f"   🆔 Transaction hash: {tx_hash[:16]}...")
         print(f"   📦 Block number: {result.get('block_number', 'pending')}")
@@ -146,14 +144,12 @@ def demonstrate_blockchain_adapter():
         print(f"🔍 Verifying digest...")
         verification = adapter.verify_digest(test_digest, tx_hash)
 
-        if verification['verified']:
+        if verification["verified"]:
             print(f"✅ Digest verification successful!")
             print(f"   📦 Block: {verification.get('block_number')}")
-            print(
-                f"   🔗 Confirmations: {verification.get('confirmations', 0)}")
+            print(f"   🔗 Confirmations: {verification.get('confirmations', 0)}")
         else:
-            print(
-                f"❌ Digest verification failed: {verification.get('message')}")
+            print(f"❌ Digest verification failed: {verification.get('message')}")
 
     except Exception as e:
         print(f"❌ Error during blockchain operations: {e}")
@@ -172,20 +168,22 @@ def demonstrate_hyperledger_setup():
 
     print("\n⚙️  Configuration Example:")
     config = {
-        'network_profile': '/path/to/network.json',
-        'channel_name': 'mychannel',
-        'chaincode_name': 'audit_chaincode',
-        'org_name': 'Org1MSP',
-        'peer_name': 'peer0.org1.example.com',
-        'user_name': 'Admin',
-        'user_secret': 'adminpw'
+        "network_profile": "/path/to/network.json",
+        "channel_name": "mychannel",
+        "chaincode_name": "audit_chaincode",
+        "org_name": "Org1MSP",
+        "peer_name": "peer0.org1.example.com",
+        "user_name": "Admin",
+        "user_secret": "adminpw",
     }
 
     for key, value in config.items():
         print(f"     {key}: {value}")
 
     print("\n💻 Usage Example:")
-    print("     from pymedsec.blockchain.hyperledger import HyperledgerBlockchainAdapter")
+    print(
+        "     from pymedsec.blockchain.hyperledger import HyperledgerBlockchainAdapter"
+    )
     print("     adapter = HyperledgerBlockchainAdapter(config)")
     print("     result = adapter.submit_digest('a1b2c3...', {'metadata': 'value'})")
 
@@ -193,6 +191,7 @@ def demonstrate_hyperledger_setup():
 
     try:
         from pymedsec.blockchain.hyperledger import HyperledgerBlockchainAdapter
+
         print("✅ Hyperledger adapter module available")
 
         # Try to create adapter (will fail without SDK but shows structure)
@@ -252,12 +251,13 @@ def main():
     except Exception as e:
         print(f"\n❌ Demo failed with error: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         # Clean up environment
-        if 'BLOCKCHAIN_BACKEND' in os.environ:
-            del os.environ['BLOCKCHAIN_BACKEND']
+        if "BLOCKCHAIN_BACKEND" in os.environ:
+            del os.environ["BLOCKCHAIN_BACKEND"]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -23,25 +23,28 @@ def create_blockchain_adapter(backend=None, config=None):
         Blockchain adapter instance or None if disabled
     """
     if backend is None:
-        backend = os.environ.get('BLOCKCHAIN_BACKEND', '').lower()
+        backend = os.environ.get("BLOCKCHAIN_BACKEND", "").lower()
 
-    if not backend or backend == 'disabled':
+    if not backend or backend == "disabled":
         return None
 
     if config is None:
         config = {}
 
     try:
-        if backend == 'ethereum':
+        if backend == "ethereum":
             from .ethereum import EthereumBlockchainAdapter
+
             return EthereumBlockchainAdapter(config)
 
-        elif backend == 'hyperledger':
+        elif backend == "hyperledger":
             from .hyperledger import HyperledgerBlockchainAdapter
+
             return HyperledgerBlockchainAdapter(config)
 
-        elif backend == 'mock':
+        elif backend == "mock":
             from .mock import MockBlockchainAdapter
+
             return MockBlockchainAdapter(config)
 
         else:
@@ -49,12 +52,11 @@ def create_blockchain_adapter(backend=None, config=None):
             return None
 
     except ImportError as e:
-        logger.warning(
-            "Failed to import blockchain adapter %s: %s", backend, e)
+        logger.warning("Failed to import blockchain adapter %s: %s", backend, e)
         return None
     except Exception as e:
         logger.error("Failed to create blockchain adapter %s: %s", backend, e)
         return None
 
 
-__all__ = ['create_blockchain_adapter']
+__all__ = ["create_blockchain_adapter"]

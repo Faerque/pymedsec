@@ -8,7 +8,10 @@ All functions are designed to be fail-closed and maintain security guarantees.
 import os
 import logging
 from .config_api import (
-    load_policy_dict, set_active_policy, get_active_policy, list_policies
+    load_policy_dict,
+    set_active_policy,
+    get_active_policy,
+    list_policies,
 )
 from .kms import get_kms_client
 
@@ -20,7 +23,7 @@ def load_policy(policy_ref=None):
     Load a security policy by name or path.
 
     Args:
-        policy_ref: Policy name ("hipaa_default", "gdpr_default", "gxplab_default") 
+        policy_ref: Policy name ("hipaa_default", "gdpr_default", "gxplab_default")
                    or absolute path to YAML file. If None, defaults to "hipaa_default".
 
     Returns:
@@ -65,8 +68,10 @@ def scrub_dicom(dicom_bytes, policy=None):
         except Exception as config_error:
             # If config fails, do minimal sanitization
             import logging
+
             logging.warning(
-                f"Config-based sanitization failed, doing minimal: {config_error}")
+                f"Config-based sanitization failed, doing minimal: {config_error}"
+            )
             sanitized_dataset = dataset.copy()
             # Remove basic PHI tags manually
             phi_tags_to_remove = [
@@ -114,7 +119,7 @@ def scrub_image(image_bytes, policy=None):
 
             # Save to bytes
             output_buffer = BytesIO()
-            clean_img.save(output_buffer, format=img.format or 'PNG')
+            clean_img.save(output_buffer, format=img.format or "PNG")
             return output_buffer.getvalue()
 
     except Exception as e:
@@ -139,7 +144,7 @@ def encrypt_blob(plain_bytes, kms_client=None, aad=None, policy=None):
 
     Example:
         >>> kms = get_kms_client("mock")
-        >>> pkg = encrypt_blob(b"sensitive data", kms_client=kms, 
+        >>> pkg = encrypt_blob(b"sensitive data", kms_client=kms,
         ...                    aad={"dataset": "trial1", "modality": "CT"})
     """
     import os
@@ -169,31 +174,32 @@ def encrypt_blob(plain_bytes, kms_client=None, aad=None, policy=None):
 
         # Wrap the DEK using KMS
         wrapped_key = kms_client.wrap_data_key(
-            dek, key_ref=getattr(kms_client, 'key_id', 'mock-key'))
+            dek, key_ref=getattr(kms_client, "key_id", "mock-key")
+        )
 
         # Prepare AAD for GCM
-        aad_data = json.dumps(aad, sort_keys=True).encode('utf-8')
+        aad_data = json.dumps(aad, sort_keys=True).encode("utf-8")
 
         # Encrypt the data
         aesgcm = AESGCM(dek)
         ciphertext = aesgcm.encrypt(nonce, plain_bytes, aad_data)
 
         # Clear the DEK from memory
-        dek = b'\x00' * 32
+        dek = b"\x00" * 32
 
         # Create the encrypted package
         package = {
             "schema": "pymedsec/v1",
             "timestamp": datetime.utcnow().isoformat() + "Z",
-            "kms_key_ref": getattr(kms_client, 'key_id', 'mock-key'),
-            "nonce": base64.b64encode(nonce).decode('ascii'),
-            "wrapped_key": base64.b64encode(wrapped_key).decode('ascii'),
-            "ciphertext": base64.b64encode(ciphertext).decode('ascii'),
+            "kms_key_ref": getattr(kms_client, "key_id", "mock-key"),
+            "nonce": base64.b64encode(nonce).decode("ascii"),
+            "wrapped_key": base64.b64encode(wrapped_key).decode("ascii"),
+            "ciphertext": base64.b64encode(ciphertext).decode("ascii"),
             "aad": aad,
             "metadata": {
                 "algorithm": "AES-256-GCM",
-                "policy_hash": "mock-hash"  # Simplified for public API
-            }
+                "policy_hash": "mock-hash",  # Simplified for public API
+            },
         }
 
         return package
@@ -237,14 +243,14 @@ def decrypt_blob(pkg, kms_client=None):
         dek = kms_client.unwrap_data_key(wrapped_key, key_ref=pkg["kms_key_ref"])
 
         # Prepare AAD for GCM
-        aad_data = json.dumps(aad, sort_keys=True).encode('utf-8')
+        aad_data = json.dumps(aad, sort_keys=True).encode("utf-8")
 
         # Decrypt the data
         aesgcm = AESGCM(dek)
         plaintext = aesgcm.decrypt(nonce, ciphertext, aad_data)
 
         # Clear the DEK from memory
-        dek = b'\x00' * 32
+        dek = b"\x00" * 32
 
         return plaintext
     except Exception as e:
@@ -288,13 +294,14 @@ def decrypt_to_tensor(pkg, kms_client=None, format_hint=None):
                 from io import BytesIO
 
                 dicom_data = pydicom.dcmread(BytesIO(raw_bytes))
-                if hasattr(dicom_data, 'pixel_array'):
+                if hasattr(dicom_data, "pixel_array"):
                     return np.array(dicom_data.pixel_array)
                 else:
                     raise RuntimeError("DICOM file contains no pixel data")
             except ImportError as e:
                 raise ImportError(
-                    "DICOM processing requires pydicom: pip install pydicom") from e
+                    "DICOM processing requires pydicom: pip install pydicom"
+                ) from e
 
         elif format_hint in ["png", "jpeg", "jpg", "tiff", "bmp"]:
             # Handle image files
@@ -306,7 +313,8 @@ def decrypt_to_tensor(pkg, kms_client=None, format_hint=None):
                 return np.array(image)
             except ImportError as e:
                 raise ImportError(
-                    "Image processing requires Pillow: pip install Pillow") from e
+                    "Image processing requires Pillow: pip install Pillow"
+                ) from e
 
         else:
             # Try to interpret as raw array data
@@ -314,6 +322,7 @@ def decrypt_to_tensor(pkg, kms_client=None, format_hint=None):
             try:
                 # Attempt to load as numpy array if it was saved as such
                 from io import BytesIO
+
                 return np.load(BytesIO(raw_bytes), allow_pickle=False)
             except Exception:
                 # Last resort: treat as uint8 array
@@ -339,7 +348,9 @@ class SecureImageDataset:
         ...     break
     """
 
-    def __init__(self, dataset_path, policy=None, kms_client=None, patterns=("*.pkg.json",)):
+    def __init__(
+        self, dataset_path, policy=None, kms_client=None, patterns=("*.pkg.json",)
+    ):
         """
         Initialize the secure dataset.
 
@@ -363,7 +374,8 @@ class SecureImageDataset:
 
         if not self.file_paths:
             logger.warning(
-                f"No encrypted packages found in {dataset_path} with patterns {patterns}")
+                f"No encrypted packages found in {dataset_path} with patterns {patterns}"
+            )
 
     def __len__(self):
         """Return the number of encrypted packages in the dataset."""
@@ -378,7 +390,8 @@ class SecureImageDataset:
         """Get a specific item by index."""
         if index >= len(self.file_paths):
             raise IndexError(
-                f"Index {index} out of range for dataset of size {len(self)}")
+                f"Index {index} out of range for dataset of size {len(self)}"
+            )
         return self._load_package(self.file_paths[index])
 
     def _load_package(self, file_path):
@@ -387,13 +400,13 @@ class SecureImageDataset:
 
         try:
             # Load the encrypted package
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 pkg = json.load(f)
 
             # Determine format hint from metadata if available
             format_hint = None
-            if 'metadata' in pkg and 'format' in pkg['metadata']:
-                format_hint = pkg['metadata']['format']
+            if "metadata" in pkg and "format" in pkg["metadata"]:
+                format_hint = pkg["metadata"]["format"]
 
             # Decrypt to tensor
             return decrypt_to_tensor(pkg, self.kms_client, format_hint)

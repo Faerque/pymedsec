@@ -38,17 +38,15 @@ class NonceTracker:
 
     def _compute_bloom_hashes(self, nonce):
         """Compute multiple hash values for bloom filter."""
-        nonce_bytes = nonce if isinstance(
-            nonce, bytes) else nonce.encode('utf-8')
+        nonce_bytes = nonce if isinstance(nonce, bytes) else nonce.encode("utf-8")
         hashes = []
 
         for i in range(self.bloom_hash_count):
             # Use different salts for each hash function
-            salt = f"bloom_{i}".encode('utf-8')
+            salt = f"bloom_{i}".encode("utf-8")
             hash_value = hashlib.sha256(salt + nonce_bytes).digest()
             # Convert to bit position
-            bit_pos = int.from_bytes(
-                hash_value[:2], 'big') % self.bloom_bit_size
+            bit_pos = int.from_bytes(hash_value[:2], "big") % self.bloom_bit_size
             hashes.append(bit_pos)
 
         return hashes
@@ -57,7 +55,7 @@ class NonceTracker:
         """Read bloom filter from file."""
         try:
             if self.bloom_file.exists():
-                with open(self.bloom_file, 'rb') as f:
+                with open(self.bloom_file, "rb") as f:
                     data = f.read()
                     if len(data) == self.bloom_bit_size // 8:
                         return bytearray(data)
@@ -70,7 +68,7 @@ class NonceTracker:
     def _write_bloom_filter(self, bloom_bits):
         """Write bloom filter to file."""
         try:
-            with open(self.bloom_file, 'wb') as f:
+            with open(self.bloom_file, "wb") as f:
                 f.write(bloom_bits)
                 f.flush()
                 os.fsync(f.fileno())
@@ -88,8 +86,7 @@ class NonceTracker:
 
         # Check in-memory cache first (fast path)
         if nonce_hex in self.memory_nonces:
-            logger.error(
-                "Nonce reuse detected in memory cache: %s", nonce_hex[:16])
+            logger.error("Nonce reuse detected in memory cache: %s", nonce_hex[:16])
             return False
 
         # Check bloom filter (probabilistic check)
@@ -106,7 +103,8 @@ class NonceTracker:
 
         # All bits are set - potential reuse (bloom filter false positive possible)
         logger.warning(
-            "Potential nonce reuse detected by bloom filter: %s", nonce_hex[:16])
+            "Potential nonce reuse detected by bloom filter: %s", nonce_hex[:16]
+        )
         return False
 
     def record_nonce_usage(self, nonce):
@@ -130,7 +128,7 @@ class NonceTracker:
         for pos in hash_positions:
             byte_index = pos // 8
             bit_index = pos % 8
-            bloom_bits[byte_index] |= (1 << bit_index)
+            bloom_bits[byte_index] |= 1 << bit_index
 
         self._write_bloom_filter(bloom_bits)
 
@@ -176,66 +174,66 @@ def validate_policy_compliance(aad, strict_mode=True):
     compliance_config = cfg.get_compliance_config()
 
     results = {
-        'is_compliant': True,
-        'violations': [],
-        'warnings': [],
-        'checks_performed': []
+        "is_compliant": True,
+        "violations": [],
+        "warnings": [],
+        "checks_performed": [],
     }
 
     # Check HIPAA compliance requirements
-    if compliance_config.get('hipaa_mode', False):
-        results['checks_performed'].append('hipaa_compliance')
+    if compliance_config.get("hipaa_mode", False):
+        results["checks_performed"].append("hipaa_compliance")
 
         # Verify minimum necessary principle
-        if 'purpose_limitation' not in aad:
-            results['violations'].append(
-                "Missing purpose limitation for HIPAA compliance")
-            results['is_compliant'] = False
+        if "purpose_limitation" not in aad:
+            results["violations"].append(
+                "Missing purpose limitation for HIPAA compliance"
+            )
+            results["is_compliant"] = False
 
         # Check de-identification requirements
-        required_pseudo_fields = ['pseudo_pid']
+        required_pseudo_fields = ["pseudo_pid"]
         for field in required_pseudo_fields:
             if field not in aad:
-                results['violations'].append(
-                    f"Missing pseudonymization field: {field}")
-                results['is_compliant'] = False
+                results["violations"].append(f"Missing pseudonymization field: {field}")
+                results["is_compliant"] = False
 
     # Check GDPR compliance requirements
-    if compliance_config.get('gdpr_mode', False):
-        results['checks_performed'].append('gdpr_compliance')
+    if compliance_config.get("gdpr_mode", False):
+        results["checks_performed"].append("gdpr_compliance")
 
         # Verify data minimization
-        if not compliance_config.get('data_minimization', False):
-            results['warnings'].append("Data minimization not enforced")
+        if not compliance_config.get("data_minimization", False):
+            results["warnings"].append("Data minimization not enforced")
 
         # Check purpose limitation
-        allowed_purposes = compliance_config.get('allowed_purposes', [])
-        if allowed_purposes and aad.get('purpose') not in allowed_purposes:
-            results['violations'].append(
-                f"Purpose not allowed: {aad.get('purpose')}")
-            results['is_compliant'] = False
+        allowed_purposes = compliance_config.get("allowed_purposes", [])
+        if allowed_purposes and aad.get("purpose") not in allowed_purposes:
+            results["violations"].append(f"Purpose not allowed: {aad.get('purpose')}")
+            results["is_compliant"] = False
 
     # Check GxP compliance requirements
-    if compliance_config.get('gxp_mode', False):
-        results['checks_performed'].append('gxp_compliance')
+    if compliance_config.get("gxp_mode", False):
+        results["checks_performed"].append("gxp_compliance")
 
         # Verify traceability requirements
-        required_gxp_fields = ['dataset_id', 'produced_at', 'policy_hash']
+        required_gxp_fields = ["dataset_id", "produced_at", "policy_hash"]
         for field in required_gxp_fields:
             if field not in aad:
-                results['violations'].append(
-                    f"Missing GxP traceability field: {field}")
-                results['is_compliant'] = False
+                results["violations"].append(f"Missing GxP traceability field: {field}")
+                results["is_compliant"] = False
 
     # Policy hash validation
     current_policy_hash = cfg.policy_hash
-    if aad.get('policy_hash') != current_policy_hash:
-        message = f"Policy hash mismatch: {aad.get('policy_hash')} != {current_policy_hash}"
+    if aad.get("policy_hash") != current_policy_hash:
+        message = (
+            f"Policy hash mismatch: {aad.get('policy_hash')} != {current_policy_hash}"
+        )
         if strict_mode:
-            results['violations'].append(message)
-            results['is_compliant'] = False
+            results["violations"].append(message)
+            results["is_compliant"] = False
         else:
-            results['warnings'].append(message)
+            results["warnings"].append(message)
 
     return results
 
@@ -252,42 +250,41 @@ def validate_encryption_parameters(kms_key_ref, nonce, aad):
     Returns:
         dict: Validation results
     """
-    results = {
-        'is_valid': True,
-        'errors': [],
-        'warnings': []
-    }
+    results = {"is_valid": True, "errors": [], "warnings": []}
 
     # Validate nonce
     if not isinstance(nonce, bytes) or len(nonce) != 12:
-        results['errors'].append("Invalid nonce: must be 12 bytes")
-        results['is_valid'] = False
+        results["errors"].append("Invalid nonce: must be 12 bytes")
+        results["is_valid"] = False
 
     # Check nonce uniqueness
     if not check_nonce_uniqueness(nonce):
-        results['errors'].append("Nonce reuse detected")
-        results['is_valid'] = False
+        results["errors"].append("Nonce reuse detected")
+        results["is_valid"] = False
 
     # Validate KMS key reference format
     if not kms_key_ref or not isinstance(kms_key_ref, str):
-        results['errors'].append("Invalid KMS key reference")
-        results['is_valid'] = False
+        results["errors"].append("Invalid KMS key reference")
+        results["is_valid"] = False
 
     # Validate AAD structure
     if not isinstance(aad, dict):
-        results['errors'].append("AAD must be a dictionary")
-        results['is_valid'] = False
+        results["errors"].append("AAD must be a dictionary")
+        results["is_valid"] = False
     else:
         required_aad_fields = [
-            'dataset_id', 'modality', 'pseudo_pid',
-            'pixel_hash', 'schema_version', 'policy_hash'
+            "dataset_id",
+            "modality",
+            "pseudo_pid",
+            "pixel_hash",
+            "schema_version",
+            "policy_hash",
         ]
 
         for field in required_aad_fields:
             if field not in aad:
-                results['errors'].append(
-                    f"Missing required AAD field: {field}")
-                results['is_valid'] = False
+                results["errors"].append(f"Missing required AAD field: {field}")
+                results["is_valid"] = False
 
     return results
 
@@ -307,20 +304,20 @@ def validate_dataset_integrity(dataset_id, file_paths, expected_hashes=None):
     from . import intake
 
     results = {
-        'dataset_id': dataset_id,
-        'total_files': len(file_paths),
-        'valid_files': 0,
-        'corrupted_files': [],
-        'missing_files': [],
-        'integrity_valid': True
+        "dataset_id": dataset_id,
+        "total_files": len(file_paths),
+        "valid_files": 0,
+        "corrupted_files": [],
+        "missing_files": [],
+        "integrity_valid": True,
     }
 
     for file_path in file_paths:
         file_path = Path(file_path)
 
         if not file_path.exists():
-            results['missing_files'].append(str(file_path))
-            results['integrity_valid'] = False
+            results["missing_files"].append(str(file_path))
+            results["integrity_valid"] = False
             continue
 
         try:
@@ -331,22 +328,21 @@ def validate_dataset_integrity(dataset_id, file_paths, expected_hashes=None):
             if expected_hashes and str(file_path) in expected_hashes:
                 expected_hash = expected_hashes[str(file_path)]
                 if current_hash != expected_hash:
-                    results['corrupted_files'].append({
-                        'file': str(file_path),
-                        'expected_hash': expected_hash,
-                        'actual_hash': current_hash
-                    })
-                    results['integrity_valid'] = False
+                    results["corrupted_files"].append(
+                        {
+                            "file": str(file_path),
+                            "expected_hash": expected_hash,
+                            "actual_hash": current_hash,
+                        }
+                    )
+                    results["integrity_valid"] = False
                     continue
 
-            results['valid_files'] += 1
+            results["valid_files"] += 1
 
         except Exception as e:
-            results['corrupted_files'].append({
-                'file': str(file_path),
-                'error': str(e)
-            })
-            results['integrity_valid'] = False
+            results["corrupted_files"].append({"file": str(file_path), "error": str(e)})
+            results["integrity_valid"] = False
 
     return results
 
@@ -365,44 +361,48 @@ def generate_validation_report(dataset_id, validation_results):
     from datetime import datetime
 
     report = {
-        'report_id': hashlib.sha256(f"{dataset_id}_{time.time()}".encode()).hexdigest()[:16],
-        'dataset_id': dataset_id,
-        'generated_at': datetime.utcnow().isoformat() + 'Z',
-        'validation_summary': {
-            'overall_status': 'PASS',
-            'total_checks': 0,
-            'passed_checks': 0,
-            'failed_checks': 0
+        "report_id": hashlib.sha256(f"{dataset_id}_{time.time()}".encode()).hexdigest()[
+            :16
+        ],
+        "dataset_id": dataset_id,
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "validation_summary": {
+            "overall_status": "PASS",
+            "total_checks": 0,
+            "passed_checks": 0,
+            "failed_checks": 0,
         },
-        'detailed_results': validation_results,
-        'recommendations': []
+        "detailed_results": validation_results,
+        "recommendations": [],
     }
 
     # Analyze results and compute summary
     for check_name, result in validation_results.items():
-        report['validation_summary']['total_checks'] += 1
+        report["validation_summary"]["total_checks"] += 1
 
         if isinstance(result, dict):
-            if result.get('is_valid', True) and result.get('is_compliant', True):
-                report['validation_summary']['passed_checks'] += 1
+            if result.get("is_valid", True) and result.get("is_compliant", True):
+                report["validation_summary"]["passed_checks"] += 1
             else:
-                report['validation_summary']['failed_checks'] += 1
-                report['validation_summary']['overall_status'] = 'FAIL'
+                report["validation_summary"]["failed_checks"] += 1
+                report["validation_summary"]["overall_status"] = "FAIL"
         else:
             # Assume boolean result
             if result:
-                report['validation_summary']['passed_checks'] += 1
+                report["validation_summary"]["passed_checks"] += 1
             else:
-                report['validation_summary']['failed_checks'] += 1
-                report['validation_summary']['overall_status'] = 'FAIL'
+                report["validation_summary"]["failed_checks"] += 1
+                report["validation_summary"]["overall_status"] = "FAIL"
 
     # Generate recommendations
-    if report['validation_summary']['failed_checks'] > 0:
-        report['recommendations'].extend([
-            "Review failed validation checks and remediate issues",
-            "Verify policy compliance configuration",
-            "Check data integrity and re-process if necessary"
-        ])
+    if report["validation_summary"]["failed_checks"] > 0:
+        report["recommendations"].extend(
+            [
+                "Review failed validation checks and remediate issues",
+                "Verify policy compliance configuration",
+                "Check data integrity and re-process if necessary",
+            ]
+        )
 
     return report
 
@@ -418,8 +418,7 @@ def cleanup_validation_cache():
         # Archive bloom filter with timestamp
         if tracker.bloom_file.exists():
             timestamp = int(time.time())
-            archive_path = tracker.bloom_file.with_suffix(
-                f'.{timestamp}.archived')
+            archive_path = tracker.bloom_file.with_suffix(f".{timestamp}.archived")
             tracker.bloom_file.rename(archive_path)
             logger.info("Archived bloom filter to %s", archive_path)
 

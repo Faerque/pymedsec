@@ -47,11 +47,12 @@ def get_kms_client(backend="mock", **kwargs):
         >>> kms = get_kms_client("aws", key_id="alias/my-key", region_name="us-east-1")
 
         >>> # Vault KMS
-        >>> kms = get_kms_client("vault", url="https://vault.example.com", 
+        >>> kms = get_kms_client("vault", url="https://vault.example.com",
         ...                      token="s.xyz", key_name="my-key")
     """
     if backend == "mock":
         from .mock import MockKMSAdapter
+
         return MockKMSAdapter()
 
     elif backend == "aws":
@@ -63,18 +64,18 @@ def get_kms_client(backend="mock", **kwargs):
             ) from e
 
         # Extract AWS-specific parameters
-        key_id = kwargs.get('key_id')
-        region_name = kwargs.get('region', kwargs.get('region_name'))
-        profile_name = kwargs.get('profile_name')
-        access_key_id = kwargs.get('access_key_id')
-        secret_access_key = kwargs.get('secret_access_key')
+        key_id = kwargs.get("key_id")
+        region_name = kwargs.get("region", kwargs.get("region_name"))
+        profile_name = kwargs.get("profile_name")
+        access_key_id = kwargs.get("access_key_id")
+        secret_access_key = kwargs.get("secret_access_key")
 
         return AWSKMSAdapter(
             key_id=key_id,
             region_name=region_name,
             profile_name=profile_name,
             access_key_id=access_key_id,
-            secret_access_key=secret_access_key
+            secret_access_key=secret_access_key,
         )
 
     elif backend == "vault":
@@ -86,16 +87,16 @@ def get_kms_client(backend="mock", **kwargs):
             ) from e
 
         # Extract Vault-specific parameters
-        url = kwargs.get('url')
+        url = kwargs.get("url")
         if not url:
             raise RuntimeError("Vault KMS backend requires 'url' parameter")
 
-        token = kwargs.get('token')
+        token = kwargs.get("token")
         if not token:
             raise RuntimeError("Vault KMS backend requires 'token' parameter")
 
-        mount = kwargs.get('mount', 'transit')
-        key_name = kwargs.get('key_name')
+        mount = kwargs.get("mount", "transit")
+        key_name = kwargs.get("key_name")
         if not key_name:
             raise RuntimeError("Vault KMS backend requires 'key_name' parameter")
 
@@ -103,7 +104,7 @@ def get_kms_client(backend="mock", **kwargs):
             vault_url=url,
             vault_token=token,
             mount_point=mount,
-            key_name=key_name  # Parameter added to VaultAdapter constructor
+            key_name=key_name,  # Parameter added to VaultAdapter constructor
         )
 
     else:
@@ -117,14 +118,17 @@ def get_kms_adapter():
     cfg = config.get_config()
     backend = cfg.kms_backend
 
-    if backend == 'aws':
+    if backend == "aws":
         from .aws_kms import AWSKMSAdapter
+
         return AWSKMSAdapter()
-    elif backend == 'vault':
+    elif backend == "vault":
         from .vault import VaultAdapter
+
         return VaultAdapter()
-    elif backend == 'mock':
+    elif backend == "mock":
         from .mock import MockKMSAdapter
+
         return MockKMSAdapter()
     else:
         raise ValueError(f"Unsupported KMS backend: {backend}")
@@ -132,30 +136,31 @@ def get_kms_adapter():
 
 def create_kms_adapter(config=None, backend=None, **kwargs):
     """
-    Create a KMS adapter instance. 
+    Create a KMS adapter instance.
 
     Args:
         config: Dictionary with 'provider' and 'config' keys (legacy format)
-        backend: Backend type string (new format) 
+        backend: Backend type string (new format)
         **kwargs: Backend-specific configuration options.
     """
     if config is not None:
         # Legacy format: {'provider': 'mock', 'config': {...}}
-        if isinstance(config, dict) and 'provider' in config:
-            provider = config['provider']
-            provider_config = config.get('config', {})
+        if isinstance(config, dict) and "provider" in config:
+            provider = config["provider"]
+            provider_config = config.get("config", {})
 
-            if provider == 'mock':
+            if provider == "mock":
                 return get_kms_client("mock")
-            elif provider in ('aws', 'aws_kms'):
+            elif provider in ("aws", "aws_kms"):
                 return get_kms_client("aws", **provider_config)
-            elif provider == 'vault':
+            elif provider == "vault":
                 return get_kms_client("vault", **provider_config)
             else:
                 raise RuntimeError(f"Unsupported KMS backend: {config}")
         else:
             raise ValueError(
-                "Invalid config format. Expected dict with 'provider' key.")
+                "Invalid config format. Expected dict with 'provider' key."
+            )
     elif backend is not None:
         # New format: create_kms_adapter(backend="mock", **kwargs)
         return get_kms_client(backend, **kwargs)
@@ -164,4 +169,4 @@ def create_kms_adapter(config=None, backend=None, **kwargs):
         return get_kms_adapter()
 
 
-__all__ = ['get_kms_adapter', 'get_kms_client', 'create_kms_adapter']
+__all__ = ["get_kms_adapter", "get_kms_client", "create_kms_adapter"]

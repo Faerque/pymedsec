@@ -16,12 +16,14 @@ from io import BytesIO
 # Test imports with proper error handling
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 try:
     from PIL import Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -29,6 +31,7 @@ except ImportError:
 try:
     from pydicom import Dataset, FileDataset
     from pydicom.uid import generate_uid
+
     HAS_PYDICOM = True
 except ImportError:
     HAS_PYDICOM = False
@@ -37,21 +40,31 @@ try:
     import pydicom
     from pydicom.dataset import Dataset, FileDataset
     from pydicom.uid import ExplicitVRLittleEndian
+
     HAS_PYDICOM = True
 except ImportError:
     HAS_PYDICOM = False
 
 try:
     from PIL import Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
 
 # Import the public API
 from pymedsec.public_api import (
-    load_policy, set_active_policy, get_active_policy, list_policies,
-    scrub_dicom, scrub_image, encrypt_blob, decrypt_blob, decrypt_to_tensor,
-    get_kms_client, SecureImageDataset
+    load_policy,
+    set_active_policy,
+    get_active_policy,
+    list_policies,
+    scrub_dicom,
+    scrub_image,
+    encrypt_blob,
+    decrypt_blob,
+    decrypt_to_tensor,
+    get_kms_client,
+    SecureImageDataset,
 )
 
 
@@ -148,8 +161,8 @@ class TestKMSClients(unittest.TestCase):
         kms = get_kms_client("mock")
         assert kms is not None
         # Mock client should have the required interface
-        assert hasattr(kms, 'wrap_data_key')
-        assert hasattr(kms, 'unwrap_data_key')
+        assert hasattr(kms, "wrap_data_key")
+        assert hasattr(kms, "unwrap_data_key")
 
     def test_get_kms_client_mock_with_kwargs(self):
         """Test that mock client ignores extra kwargs."""
@@ -159,7 +172,9 @@ class TestKMSClients(unittest.TestCase):
     @pytest.mark.skipif(True, reason="AWS dependencies optional")
     def test_get_kms_client_aws_missing_key_id(self):
         """Test AWS client requires key_id."""
-        with pytest.raises(RuntimeError, match="AWS KMS backend requires 'key_id' parameter"):
+        with pytest.raises(
+            RuntimeError, match="AWS KMS backend requires 'key_id' parameter"
+        ):
             get_kms_client("aws")
 
     @pytest.mark.skipif(True, reason="AWS dependencies optional")
@@ -167,8 +182,9 @@ class TestKMSClients(unittest.TestCase):
         """Test AWS client creation with valid parameters."""
         # This would fail without boto3, which is expected
         try:
-            kms = get_kms_client("aws", key_id="alias/test-key",
-                                 region_name="us-east-1")
+            kms = get_kms_client(
+                "aws", key_id="alias/test-key", region_name="us-east-1"
+            )
             assert kms is not None
         except ImportError:
             pytest.skip("boto3 not available")
@@ -176,13 +192,19 @@ class TestKMSClients(unittest.TestCase):
     @pytest.mark.skipif(True, reason="Vault dependencies optional")
     def test_get_kms_client_vault_missing_params(self):
         """Test Vault client requires url, token, key_name."""
-        with pytest.raises(RuntimeError, match="Vault KMS backend requires 'url' parameter"):
+        with pytest.raises(
+            RuntimeError, match="Vault KMS backend requires 'url' parameter"
+        ):
             get_kms_client("vault")
 
-        with pytest.raises(RuntimeError, match="Vault KMS backend requires 'token' parameter"):
+        with pytest.raises(
+            RuntimeError, match="Vault KMS backend requires 'token' parameter"
+        ):
             get_kms_client("vault", url="https://vault.example.com")
 
-        with pytest.raises(RuntimeError, match="Vault KMS backend requires 'key_name' parameter"):
+        with pytest.raises(
+            RuntimeError, match="Vault KMS backend requires 'key_name' parameter"
+        ):
             get_kms_client("vault", url="https://vault.example.com", token="s.token")
 
     def test_get_kms_client_unsupported_backend(self):
@@ -223,7 +245,7 @@ class TestDataProcessing(unittest.TestCase):
         dicom_bytes = buffer.getvalue()
 
         # Mock the sanitize function to avoid config dependency
-        with patch('pymedsec.sanitize.sanitize_dicom') as mock_sanitize:
+        with patch("pymedsec.sanitize.sanitize_dicom") as mock_sanitize:
             # Create a mock sanitized dataset
             sanitized_ds = ds.copy()
             del sanitized_ds.PatientName
@@ -245,14 +267,14 @@ class TestDataProcessing(unittest.TestCase):
             pytest.skip("PIL not available")
 
         # Create a simple test image
-        img = Image.new('RGB', (100, 100), color=(255, 0, 0))  # Red color as RGB tuple
+        img = Image.new("RGB", (100, 100), color=(255, 0, 0))  # Red color as RGB tuple
 
         # Add some fake EXIF data
-        img.info['exif'] = b'\xff\xe1\x00\x1c'  # Minimal EXIF header
+        img.info["exif"] = b"\xff\xe1\x00\x1c"  # Minimal EXIF header
 
         # Convert to bytes
         buffer = BytesIO()
-        img.save(buffer, format='JPEG', quality=95)
+        img.save(buffer, format="JPEG", quality=95)
         image_bytes = buffer.getvalue()
 
         # Test scrubbing
@@ -264,7 +286,7 @@ class TestDataProcessing(unittest.TestCase):
         self.assertEqual(result_img.size, (100, 100))
 
         # Check that metadata was removed (info should be empty or minimal)
-        self.assertNotIn('exif', result_img.info)
+        self.assertNotIn("exif", result_img.info)
 
     def test_encrypt_decrypt_blob_roundtrip(self):
         """Test encrypt/decrypt round-trip preserves data."""
@@ -308,7 +330,7 @@ class TestDataProcessing(unittest.TestCase):
         kms = get_kms_client("mock")
         pkg = {"encrypted": "data"}
 
-        with patch('pymedsec.public_api.decrypt_blob') as mock_decrypt:
+        with patch("pymedsec.public_api.decrypt_blob") as mock_decrypt:
             mock_decrypt.return_value = test_data
 
             tensor = decrypt_to_tensor(pkg, kms_client=kms)
@@ -317,7 +339,9 @@ class TestDataProcessing(unittest.TestCase):
             assert tensor.dtype == np.uint8
             mock_decrypt.assert_called_once_with(pkg, kms)
 
-    @pytest.mark.skipif(not (HAS_NUMPY and HAS_PYDICOM), reason="numpy or pydicom not available")
+    @pytest.mark.skipif(
+        not (HAS_NUMPY and HAS_PYDICOM), reason="numpy or pydicom not available"
+    )
     def test_decrypt_to_tensor_dicom(self):
         """Test decrypt_to_tensor with DICOM format hint."""
         # Create synthetic DICOM with pixel data
@@ -325,10 +349,10 @@ class TestDataProcessing(unittest.TestCase):
         kms = get_kms_client("mock")
         pkg = {"encrypted": "data"}
 
-        with patch('pymedsec.public_api.decrypt_blob') as mock_decrypt:
+        with patch("pymedsec.public_api.decrypt_blob") as mock_decrypt:
             mock_decrypt.return_value = dicom_data
 
-            with patch('pydicom.dcmread') as mock_dcmread:
+            with patch("pydicom.dcmread") as mock_dcmread:
                 mock_dataset = MagicMock()
                 mock_dataset.pixel_array = np.array([[1, 2], [3, 4]])
                 mock_dcmread.return_value = mock_dataset
@@ -341,7 +365,7 @@ class TestDataProcessing(unittest.TestCase):
 
     def test_decrypt_to_tensor_no_numpy(self):
         """Test decrypt_to_tensor raises ImportError without numpy."""
-        with patch.dict('sys.modules', {'numpy': None}):
+        with patch.dict("sys.modules", {"numpy": None}):
             with pytest.raises(ImportError, match="decrypt_to_tensor requires numpy"):
                 decrypt_to_tensor({}, get_kms_client("mock"))
 
@@ -363,6 +387,7 @@ class TestDataProcessing(unittest.TestCase):
 
         # Save to bytes
         from io import BytesIO
+
         output = BytesIO()
         ds.save_as(output, write_like_original=False)
         return output.getvalue()
@@ -382,13 +407,14 @@ class TestDataProcessing(unittest.TestCase):
         from io import BytesIO
 
         # Create 2x2 RGB image
-        data = np.array([[[255, 0, 0], [0, 255, 0]],
-                        [[0, 0, 255], [255, 255, 255]]], dtype=np.uint8)
+        data = np.array(
+            [[[255, 0, 0], [0, 255, 0]], [[0, 0, 255], [255, 255, 255]]], dtype=np.uint8
+        )
         image = Image.fromarray(data)
 
         # Save to bytes
         output = BytesIO()
-        image.save(output, format='PNG')
+        image.save(output, format="PNG")
         return output.getvalue()
 
 
@@ -437,7 +463,7 @@ class TestSecureImageDataset(unittest.TestCase):
         dataset = SecureImageDataset(str(pkg_dir), kms_client=kms)
 
         # Mock the decrypt_to_tensor function
-        with patch('pymedsec.public_api.decrypt_to_tensor') as mock_decrypt:
+        with patch("pymedsec.public_api.decrypt_to_tensor") as mock_decrypt:
             mock_decrypt.return_value = np.array([[1, 2], [3, 4]])
 
             # Test iteration
@@ -470,9 +496,9 @@ class TestErrorHandling(unittest.TestCase):
         kms = get_kms_client("mock")
 
         # Mock the internal functions
-        with patch('pymedsec.sanitize.sanitize_dicom_bytes') as mock_sanitize, \
-                patch('pymedsec.public_api.load_policy') as mock_load:
-
+        with patch("pymedsec.sanitize.sanitize_dicom_bytes") as mock_sanitize, patch(
+            "pymedsec.public_api.load_policy"
+        ) as mock_load:
             mock_sanitize.return_value = b"sanitized"
             mock_load.return_value = {"test": "policy"}
 
@@ -484,9 +510,9 @@ class TestErrorHandling(unittest.TestCase):
         """Test that crypto functions create mock KMS when kms_client=None."""
         data = b"test data"
 
-        with patch('pymedsec.crypto.encrypt_data') as mock_encrypt, \
-                patch('pymedsec.public_api.get_kms_client') as mock_get_kms:
-
+        with patch("pymedsec.crypto.encrypt_data") as mock_encrypt, patch(
+            "pymedsec.public_api.get_kms_client"
+        ) as mock_get_kms:
             mock_package = MagicMock()
             mock_package.to_dict.return_value = {"encrypted": "data"}
             mock_encrypt.return_value = mock_package
@@ -504,14 +530,14 @@ class TestErrorHandling(unittest.TestCase):
         kms = get_kms_client("mock")
 
         # Test encryption error
-        with patch('pymedsec.crypto.encrypt_data') as mock_encrypt:
+        with patch("pymedsec.crypto.encrypt_data") as mock_encrypt:
             mock_encrypt.side_effect = Exception("Crypto error")
 
             with pytest.raises(RuntimeError, match="Encryption failed: Crypto error"):
                 encrypt_blob(b"data", kms_client=kms)
 
         # Test decryption error
-        with patch('pymedsec.crypto.decrypt_data') as mock_decrypt:
+        with patch("pymedsec.crypto.decrypt_data") as mock_decrypt:
             mock_decrypt.side_effect = Exception("Decrypt error")
 
             with pytest.raises(RuntimeError, match="Decryption failed: Decrypt error"):

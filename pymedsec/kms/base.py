@@ -12,7 +12,7 @@ class KMSAdapter(ABC):
     """Abstract base class for KMS adapters."""
 
     @abstractmethod
-    def generate_data_key(self, key_ref, key_spec='256'):
+    def generate_data_key(self, key_ref, key_spec="256"):
         """
         Generate a new data encryption key.
 
@@ -23,8 +23,7 @@ class KMSAdapter(ABC):
         Returns:
             bytes: Plaintext data key
         """
-        raise NotImplementedError(
-            "Subclasses must implement generate_data_key")
+        raise NotImplementedError("Subclasses must implement generate_data_key")
 
     @abstractmethod
     def wrap_data_key(self, plaintext_key, key_ref):
@@ -83,7 +82,4 @@ class KMSAdapter(ABC):
         Returns:
             dict: Key metadata (implementation-specific)
         """
-        return {
-            'key_ref': key_ref,
-            'backend': self.__class__.__name__
-        }
+        return {"key_ref": key_ref, "backend": self.__class__.__name__}

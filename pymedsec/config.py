@@ -29,17 +29,17 @@ class SecurityConfig:
         self.kms_key_ref = os.getenv("IMGSEC_KMS_KEY_REF")
 
         if not self.kms_key_ref:
-            raise ValueError(
-                "IMGSEC_KMS_KEY_REF environment variable is required")
+            raise ValueError("IMGSEC_KMS_KEY_REF environment variable is required")
 
         # Optional settings with secure defaults
         self.audit_path = os.getenv("IMGSEC_AUDIT_PATH", "./audit.jsonl")
-        self.no_plaintext_disk = os.getenv(
-            "IMGSEC_NO_PLAINTEXT_DISK", "false").lower() == "true"
-        self.ocr_redaction = os.getenv(
-            "IMGSEC_OCR_REDACTION", "false").lower() == "true"
-        self.require_tee = os.getenv(
-            "IMGSEC_REQUIRE_TEE", "false").lower() == "true"
+        self.no_plaintext_disk = (
+            os.getenv("IMGSEC_NO_PLAINTEXT_DISK", "false").lower() == "true"
+        )
+        self.ocr_redaction = (
+            os.getenv("IMGSEC_OCR_REDACTION", "false").lower() == "true"
+        )
+        self.require_tee = os.getenv("IMGSEC_REQUIRE_TEE", "false").lower() == "true"
         self.actor = os.getenv("IMGSEC_ACTOR", self._get_default_actor())
         self.debug = os.getenv("IMGSEC_DEBUG", "false").lower() == "true"
 
@@ -65,6 +65,7 @@ class SecurityConfig:
         """Get default actor name from system."""
         try:
             import getpass
+
             return getpass.getuser()
         except (ImportError, OSError):
             return "unknown"
@@ -74,10 +75,9 @@ class SecurityConfig:
         try:
             policy_path = Path(self.policy_path)
             if not policy_path.exists():
-                raise FileNotFoundError(
-                    f"Policy file not found: {self.policy_path}")
+                raise FileNotFoundError(f"Policy file not found: {self.policy_path}")
 
-            with open(policy_path, 'r', encoding='utf-8') as f:
+            with open(policy_path, "r", encoding="utf-8") as f:
                 policy = yaml.safe_load(f)
 
             if not policy:
@@ -85,8 +85,7 @@ class SecurityConfig:
 
             return policy
         except Exception as e:
-            logger.error("Failed to load policy from %s: %s",
-                         self.policy_path, e)
+            logger.error("Failed to load policy from %s: %s", self.policy_path, e)
             raise
 
     def _load_from_file(self, file_path):
@@ -103,11 +102,12 @@ class SecurityConfig:
             if not path.exists():
                 raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
-            with open(path, 'r', encoding='utf-8') as f:
-                if path.suffix.lower() in ['.yaml', '.yml']:
+            with open(path, "r", encoding="utf-8") as f:
+                if path.suffix.lower() in [".yaml", ".yml"]:
                     config_data = yaml.safe_load(f)
-                elif path.suffix.lower() == '.json':
+                elif path.suffix.lower() == ".json":
                     import json
+
                     config_data = json.load(f)
                 else:
                     # Assume YAML by default
@@ -124,9 +124,8 @@ class SecurityConfig:
 
     def _compute_policy_hash(self):
         """Compute SHA-256 hash of policy for tamper detection."""
-        policy_str = yaml.dump(
-            self.policy, sort_keys=True, default_flow_style=False)
-        return hashlib.sha256(policy_str.encode('utf-8')).hexdigest()
+        policy_str = yaml.dump(self.policy, sort_keys=True, default_flow_style=False)
+        return hashlib.sha256(policy_str.encode("utf-8")).hexdigest()
 
     def _validate_config(self):
         """Validate configuration for security and compliance."""
@@ -134,16 +133,21 @@ class SecurityConfig:
         valid_backends = ["aws", "vault", "mock"]
         if self.kms_backend not in valid_backends:
             raise ValueError(
-                f"Invalid KMS backend: {self.kms_backend}. Must be one of {valid_backends}")
+                f"Invalid KMS backend: {self.kms_backend}. Must be one of {valid_backends}"
+            )
 
         # Warn about mock backend in production
         if self.kms_backend == "mock":
-            logger.warning(
-                "WARNING: Using mock KMS backend - NOT FOR PRODUCTION USE")
+            logger.warning("WARNING: Using mock KMS backend - NOT FOR PRODUCTION USE")
 
         # Validate policy schema
-        required_policy_fields = ["schema_version",
-                                  "name", "sanitization", "encryption", "audit"]
+        required_policy_fields = [
+            "schema_version",
+            "name",
+            "sanitization",
+            "encryption",
+            "audit",
+        ]
         for field in required_policy_fields:
             if field not in self.policy:
                 raise ValueError(f"Policy missing required field: {field}")
@@ -155,16 +159,17 @@ class SecurityConfig:
             except ImportError as exc:
                 if self.policy.get("sanitization", {}).get("require_ocr", False):
                     raise RuntimeError(
-                        "OCR redaction enabled but pytesseract not available") from exc
+                        "OCR redaction enabled but pytesseract not available"
+                    ) from exc
                 else:
                     logger.warning(
-                        "OCR redaction requested but pytesseract not available - disabling")
+                        "OCR redaction requested but pytesseract not available - disabling"
+                    )
                     self.ocr_redaction = False
 
         # Validate TEE requirements
         if self.require_tee:
-            logger.info(
-                "TEE validation enabled - add your TEE detection logic here")
+            logger.info("TEE validation enabled - add your TEE detection logic here")
             # NOTE: Add actual TEE validation logic based on your environment
 
     def _setup_logging(self):
@@ -174,17 +179,15 @@ class SecurityConfig:
         # Configure root logger
         logging.basicConfig(
             level=level,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.StreamHandler(sys.stdout)
-            ]
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            handlers=[logging.StreamHandler(sys.stdout)],
         )
 
         # Suppress noisy third-party loggers unless in debug mode
         if not self.debug:
-            logging.getLogger('boto3').setLevel(logging.WARNING)
-            logging.getLogger('botocore').setLevel(logging.WARNING)
-            logging.getLogger('urllib3').setLevel(logging.WARNING)
+            logging.getLogger("boto3").setLevel(logging.WARNING)
+            logging.getLogger("botocore").setLevel(logging.WARNING)
+            logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     def get_sanitization_config(self):
         """Get sanitization configuration from policy."""
@@ -228,8 +231,7 @@ def load_config():
 def get_config():
     """Get current configuration instance."""
     if _config is None:
-        raise RuntimeError(
-            "Configuration not loaded. Call load_config() first.")
+        raise RuntimeError("Configuration not loaded. Call load_config() first.")
     return _config
 
 
@@ -243,10 +245,7 @@ def reload_config():
 # Environment validation helper
 def validate_environment():
     """Validate that all required environment variables are set."""
-    required_vars = [
-        "IMGSEC_POLICY",
-        "IMGSEC_KMS_KEY_REF"
-    ]
+    required_vars = ["IMGSEC_POLICY", "IMGSEC_KMS_KEY_REF"]
 
     missing_vars = []
     for var in required_vars:
@@ -254,7 +253,6 @@ def validate_environment():
             missing_vars.append(var)
 
     if missing_vars:
-        raise ValueError(
-            f"Missing required environment variables: {missing_vars}")
+        raise ValueError(f"Missing required environment variables: {missing_vars}")
 
     return True

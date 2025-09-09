@@ -103,17 +103,18 @@ def load_policy_dict(policy_ref):
                 content = policy_file.read_text()
             except Exception:
                 # Fallback - treat as regular file
-                with open(policy_path, 'r', encoding='utf-8') as f:
+                with open(policy_path, "r", encoding="utf-8") as f:
                     content = f.read()
         else:
             # Regular file
-            with open(policy_path, 'r', encoding='utf-8') as f:
+            with open(policy_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
         policy_dict = yaml.safe_load(content)
         if not isinstance(policy_dict, dict):
             raise RuntimeError(
-                f"Invalid policy format in {policy_path}: must be a YAML dictionary")
+                f"Invalid policy format in {policy_path}: must be a YAML dictionary"
+            )
 
         return policy_dict
 
@@ -174,7 +175,7 @@ def list_policies():
         if hasattr(policies_root, "iterdir"):
             # New style
             for policy_file in policies_root.iterdir():
-                if policy_file.name.endswith('.yaml'):
+                if policy_file.name.endswith(".yaml"):
                     policy_files.append(policy_file.name[:-5])  # Remove .yaml
         else:
             # Fallback for older versions - assume standard policies exist

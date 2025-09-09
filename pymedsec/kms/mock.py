@@ -22,9 +22,9 @@ class MockKMSAdapter(KMSAdapter):
         # Use a fixed master key for deterministic behavior in tests
         if master_key is None:
             master_key_seed = os.getenv(
-                'IMGSEC_MOCK_KEY_SEED', 'development_key_do_not_use_in_production')
-            self.master_key = hashlib.sha256(
-                master_key_seed.encode('utf-8')).digest()
+                "IMGSEC_MOCK_KEY_SEED", "development_key_do_not_use_in_production"
+            )
+            self.master_key = hashlib.sha256(master_key_seed.encode("utf-8")).digest()
         else:
             self.master_key = master_key
 
@@ -34,7 +34,7 @@ class MockKMSAdapter(KMSAdapter):
         logger.warning("This is for development and testing only!")
         logger.warning("=" * 60)
 
-    def generate_data_key(self, key_ref=None, key_spec='256', key_id=None, **kwargs):
+    def generate_data_key(self, key_ref=None, key_spec="256", key_id=None, **kwargs):
         """Generate a random data key.
 
         Args:
@@ -53,9 +53,9 @@ class MockKMSAdapter(KMSAdapter):
             key_ref = "mock-key-default"
 
         try:
-            if key_spec in ('256', 'AES_256'):
+            if key_spec in ("256", "AES_256"):
                 key_size = 32  # 256 bits
-            elif key_spec in ('128', 'AES_128'):
+            elif key_spec in ("128", "AES_128"):
                 key_size = 16  # 128 bits
             else:
                 raise ValueError(f"Unsupported key spec: {key_spec}")
@@ -69,14 +69,13 @@ class MockKMSAdapter(KMSAdapter):
 
         except Exception as e:
             logger.error("Mock data key generation failed: %s", e)
-            raise RuntimeError(
-                f"Mock KMS data key generation failed: {e}") from e
+            raise RuntimeError(f"Mock KMS data key generation failed: {e}") from e
 
     def wrap_data_key(self, plaintext_key, key_ref):
         """Wrap data key using AES-GCM with master key."""
         try:
             # Use key_ref as additional authenticated data
-            aad = key_ref.encode('utf-8')
+            aad = key_ref.encode("utf-8")
 
             # Generate nonce for wrapping
             nonce = os.urandom(12)
@@ -106,7 +105,7 @@ class MockKMSAdapter(KMSAdapter):
             ciphertext = wrapped_key[12:]
 
             # Use key_ref as additional authenticated data
-            aad = key_ref.encode('utf-8')
+            aad = key_ref.encode("utf-8")
 
             # Decrypt the data key
             aesgcm = AESGCM(self.master_key)
@@ -133,32 +132,32 @@ class MockKMSAdapter(KMSAdapter):
     def get_key_metadata(self, key_ref):
         """Get mock key metadata."""
         return {
-            'key_ref': key_ref,
-            'backend': 'Mock KMS (Development Only)',
-            'master_key_hash': hashlib.sha256(self.master_key).hexdigest()[:16],
-            'warning': 'NOT FOR PRODUCTION USE',
-            'algorithm': 'AES-256-GCM',
-            'key_size_bits': 256
+            "key_ref": key_ref,
+            "backend": "Mock KMS (Development Only)",
+            "master_key_hash": hashlib.sha256(self.master_key).hexdigest()[:16],
+            "warning": "NOT FOR PRODUCTION USE",
+            "algorithm": "AES-256-GCM",
+            "key_size_bits": 256,
         }
 
     def create_key(self, key_name, description=None):
         """Create a mock key (just return metadata)."""
         logger.info("Created mock key: %s", key_name)
         return {
-            'key_name': key_name,
-            'description': description or f'Mock key: {key_name}',
-            'backend': 'Mock KMS',
-            'created': True,
-            'warning': 'NOT FOR PRODUCTION USE'
+            "key_name": key_name,
+            "description": description or f"Mock key: {key_name}",
+            "backend": "Mock KMS",
+            "created": True,
+            "warning": "NOT FOR PRODUCTION USE",
         }
 
     def list_keys(self):
         """List mock keys (return common test keys)."""
         return [
-            {'KeyId': 'mock-key-1', 'Description': 'Mock development key 1'},
-            {'KeyId': 'mock-key-2', 'Description': 'Mock development key 2'},
-            {'KeyId': 'test-key', 'Description': 'Mock test key'},
-            {'KeyId': 'dev-key', 'Description': 'Mock development key'}
+            {"KeyId": "mock-key-1", "Description": "Mock development key 1"},
+            {"KeyId": "mock-key-2", "Description": "Mock development key 2"},
+            {"KeyId": "test-key", "Description": "Mock test key"},
+            {"KeyId": "dev-key", "Description": "Mock development key"},
         ]
 
     def rotate_master_key(self, new_seed=None):
@@ -167,13 +166,14 @@ class MockKMSAdapter(KMSAdapter):
             new_seed = os.urandom(32).hex()
 
         old_hash = hashlib.sha256(self.master_key).hexdigest()[:16]
-        self.master_key = hashlib.sha256(new_seed.encode('utf-8')).digest()
+        self.master_key = hashlib.sha256(new_seed.encode("utf-8")).digest()
         new_hash = hashlib.sha256(self.master_key).hexdigest()[:16]
 
         from datetime import datetime
+
         logger.warning("Mock master key rotated: %s -> %s", old_hash, new_hash)
         return {
-            'old_key_hash': old_hash,
-            'new_key_hash': new_hash,
-            'rotated_at': datetime.utcnow().isoformat()
+            "old_key_hash": old_hash,
+            "new_key_hash": new_hash,
+            "rotated_at": datetime.utcnow().isoformat(),
         }

@@ -25,8 +25,15 @@ logger = logging.getLogger(__name__)
 class EncryptedPackage:
     """Represents an encrypted medical image package."""
 
-    def __init__(self, schema="imgsec/v1", kms_key_ref=None, nonce_b64=None,
-                 aad_b64=None, wrapped_key_b64=None, ciphertext_b64=None):
+    def __init__(
+        self,
+        schema="imgsec/v1",
+        kms_key_ref=None,
+        nonce_b64=None,
+        aad_b64=None,
+        wrapped_key_b64=None,
+        ciphertext_b64=None,
+    ):
         self.schema = schema
         self.kms_key_ref = kms_key_ref
         self.nonce_b64 = nonce_b64
@@ -42,12 +49,12 @@ class EncryptedPackage:
             "nonce_b64": self.nonce_b64,
             "aad_b64": self.aad_b64,
             "wrapped_key_b64": self.wrapped_key_b64,
-            "ciphertext_b64": self.ciphertext_b64
+            "ciphertext_b64": self.ciphertext_b64,
         }
 
     def to_json(self):
         """Serialize to JSON string."""
-        return json.dumps(self.to_dict(), sort_keys=True, separators=(',', ':'))
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
 
     @classmethod
     def from_dict(cls, data):
@@ -61,9 +68,16 @@ class EncryptedPackage:
         return cls.from_dict(data)
 
 
-def encrypt_data(plaintext_data, kms_key_ref=None, dataset_id=None,
-                 modality=None, pseudo_pid=None, pixel_hash=None,
-                 policy_hash=None, additional_aad=None):
+def encrypt_data(
+    plaintext_data,
+    kms_key_ref=None,
+    dataset_id=None,
+    modality=None,
+    pseudo_pid=None,
+    pixel_hash=None,
+    policy_hash=None,
+    additional_aad=None,
+):
     """
     Encrypt data using envelope encryption with AES-256-GCM.
 
@@ -89,15 +103,15 @@ def encrypt_data(plaintext_data, kms_key_ref=None, dataset_id=None,
     # Validate required AAD fields
     if not all([dataset_id, modality, pseudo_pid, pixel_hash]):
         raise ValueError(
-            "Missing required AAD fields: dataset_id, modality, pseudo_pid, pixel_hash")
+            "Missing required AAD fields: dataset_id, modality, pseudo_pid, pixel_hash"
+        )
 
     # Generate fresh nonce (96-bit for GCM)
     nonce = os.urandom(12)
 
     # Check for nonce reuse
     if not validate.check_nonce_uniqueness(nonce):
-        raise RuntimeError(
-            "Nonce reuse detected - cryptographic security violation")
+        raise RuntimeError("Nonce reuse detected - cryptographic security violation")
 
     # Build Additional Authenticated Data (AAD)
     aad = {
@@ -107,16 +121,16 @@ def encrypt_data(plaintext_data, kms_key_ref=None, dataset_id=None,
         "modality": modality,
         "pseudo_pid": pseudo_pid,
         "pixel_hash": pixel_hash,
-        "produced_at": datetime.utcnow().isoformat() + 'Z',
-        "policy_hash": policy_hash
+        "produced_at": datetime.utcnow().isoformat() + "Z",
+        "policy_hash": policy_hash,
     }
 
     # Add any additional AAD fields
     if additional_aad:
         aad.update(additional_aad)
 
-    aad_json = json.dumps(aad, sort_keys=True, separators=(',', ':'))
-    aad_bytes = aad_json.encode('utf-8')
+    aad_json = json.dumps(aad, sort_keys=True, separators=(",", ":"))
+    aad_bytes = aad_json.encode("utf-8")
 
     try:
         # Get KMS adapter and generate/wrap data key
@@ -131,17 +145,17 @@ def encrypt_data(plaintext_data, kms_key_ref=None, dataset_id=None,
         ciphertext = aesgcm.encrypt(nonce, plaintext_data, aad_bytes)
 
         # Zeroize the data key
-        data_key = b'\x00' * len(data_key)
+        data_key = b"\x00" * len(data_key)
         del data_key
 
         # Create encrypted package
         package = EncryptedPackage(
             schema="imgsec/v1",
             kms_key_ref=kms_key_ref,
-            nonce_b64=base64.b64encode(nonce).decode('ascii'),
-            aad_b64=base64.b64encode(aad_bytes).decode('ascii'),
-            wrapped_key_b64=base64.b64encode(wrapped_key).decode('ascii'),
-            ciphertext_b64=base64.b64encode(ciphertext).decode('ascii')
+            nonce_b64=base64.b64encode(nonce).decode("ascii"),
+            aad_b64=base64.b64encode(aad_bytes).decode("ascii"),
+            wrapped_key_b64=base64.b64encode(wrapped_key).decode("ascii"),
+            ciphertext_b64=base64.b64encode(ciphertext).decode("ascii"),
         )
 
         # Record nonce usage
@@ -149,33 +163,35 @@ def encrypt_data(plaintext_data, kms_key_ref=None, dataset_id=None,
 
         # Audit log the encryption
         audit.log_operation(
-            operation='encrypt_data',
-            outcome='success',
+            operation="encrypt_data",
+            outcome="success",
             dataset_id=dataset_id,
             kms_key_ref=kms_key_ref,
             modality=modality,
             pseudo_pid=pseudo_pid,
             data_size_bytes=len(plaintext_data),
-            package_size_bytes=len(package.to_json())
+            package_size_bytes=len(package.to_json()),
         )
 
-        logger.info("Data encryption completed for dataset=%s, modality=%s",
-                    dataset_id, modality)
+        logger.info(
+            "Data encryption completed for dataset=%s, modality=%s",
+            dataset_id,
+            modality,
+        )
 
         return package
 
     except Exception as e:
         # Audit log the failure
         audit.log_operation(
-            operation='encrypt_data',
-            outcome='failure',
+            operation="encrypt_data",
+            outcome="failure",
             dataset_id=dataset_id,
             kms_key_ref=kms_key_ref,
-            error=str(e)
+            error=str(e),
         )
 
-        logger.error(
-            "Data encryption failed for dataset=%s: %s", dataset_id, e)
+        logger.error("Data encryption failed for dataset=%s: %s", dataset_id, e)
         raise
 
 
@@ -213,7 +229,7 @@ def decrypt_data(encrypted_package, verify_aad=True):
 
     # Parse and verify AAD
     try:
-        aad = json.loads(aad_bytes.decode('utf-8'))
+        aad = json.loads(aad_bytes.decode("utf-8"))
     except Exception as e:
         raise ValueError(f"Invalid AAD JSON: {e}") from e
 
@@ -223,41 +239,39 @@ def decrypt_data(encrypted_package, verify_aad=True):
     try:
         # Get KMS adapter and unwrap data key
         kms_adapter = get_kms_adapter()
-        data_key = kms_adapter.unwrap_data_key(
-            wrapped_key, package.kms_key_ref)
+        data_key = kms_adapter.unwrap_data_key(wrapped_key, package.kms_key_ref)
 
         # Decrypt with AES-256-GCM
         aesgcm = AESGCM(data_key)
         plaintext = aesgcm.decrypt(nonce, ciphertext, aad_bytes)
 
         # Zeroize the data key
-        data_key = b'\x00' * len(data_key)
+        data_key = b"\x00" * len(data_key)
         del data_key
 
         # Audit log the decryption
         audit.log_operation(
-            operation='decrypt_data',
-            outcome='success',
-            dataset_id=aad.get('dataset_id'),
+            operation="decrypt_data",
+            outcome="success",
+            dataset_id=aad.get("dataset_id"),
             kms_key_ref=package.kms_key_ref,
-            modality=aad.get('modality'),
-            pseudo_pid=aad.get('pseudo_pid'),
-            data_size_bytes=len(plaintext)
+            modality=aad.get("modality"),
+            pseudo_pid=aad.get("pseudo_pid"),
+            data_size_bytes=len(plaintext),
         )
 
-        logger.info("Data decryption completed for dataset=%s",
-                    aad.get('dataset_id'))
+        logger.info("Data decryption completed for dataset=%s", aad.get("dataset_id"))
 
         return plaintext
 
     except Exception as e:
         # Audit log the failure
         audit.log_operation(
-            operation='decrypt_data',
-            outcome='failure',
-            dataset_id=aad.get('dataset_id'),
+            operation="decrypt_data",
+            outcome="failure",
+            dataset_id=aad.get("dataset_id"),
             kms_key_ref=package.kms_key_ref,
-            error=str(e)
+            error=str(e),
         )
 
         logger.error("Data decryption failed: %s", e)
@@ -270,8 +284,14 @@ def _verify_aad_compliance(aad):
 
     # Required AAD fields
     required_fields = [
-        'policy', 'dataset_id', 'schema_version', 'modality',
-        'pseudo_pid', 'pixel_hash', 'produced_at', 'policy_hash'
+        "policy",
+        "dataset_id",
+        "schema_version",
+        "modality",
+        "pseudo_pid",
+        "pixel_hash",
+        "produced_at",
+        "policy_hash",
     ]
 
     missing_fields = []
@@ -283,20 +303,21 @@ def _verify_aad_compliance(aad):
         raise ValueError(f"AAD missing required fields: {missing_fields}")
 
     # Verify schema version compatibility
-    if aad['schema_version'] != 'imgsec/v1':
-        raise ValueError(
-            f"Incompatible schema version: {aad['schema_version']}")
+    if aad["schema_version"] != "imgsec/v1":
+        raise ValueError(f"Incompatible schema version: {aad['schema_version']}")
 
     # Verify policy hash matches current policy (optional check)
     current_policy_hash = cfg.policy_hash
-    if aad['policy_hash'] != current_policy_hash:
+    if aad["policy_hash"] != current_policy_hash:
+        logger.warning("Policy hash mismatch - encrypted with different policy")
         logger.warning(
-            "Policy hash mismatch - encrypted with different policy")
-        logger.warning("Package policy: %s, Current policy: %s",
-                       aad['policy_hash'], current_policy_hash)
+            "Package policy: %s, Current policy: %s",
+            aad["policy_hash"],
+            current_policy_hash,
+        )
 
         # Fail if policy requires strict matching
-        if cfg.policy.get('security', {}).get('require_policy_match', False):
+        if cfg.policy.get("security", {}).get("require_policy_match", False):
             raise ValueError("Policy hash mismatch - decryption not allowed")
 
 
@@ -316,21 +337,21 @@ def verify_package_integrity(encrypted_package):
         package = encrypted_package
 
     results = {
-        'is_valid': True,
-        'schema_valid': False,
-        'aad_valid': False,
-        'base64_valid': False,
-        'kms_accessible': False,
-        'errors': []
+        "is_valid": True,
+        "schema_valid": False,
+        "aad_valid": False,
+        "base64_valid": False,
+        "kms_accessible": False,
+        "errors": [],
     }
 
     try:
         # Check schema version
-        if package.schema == 'imgsec/v1':
-            results['schema_valid'] = True
+        if package.schema == "imgsec/v1":
+            results["schema_valid"] = True
         else:
-            results['errors'].append(f"Invalid schema: {package.schema}")
-            results['is_valid'] = False
+            results["errors"].append(f"Invalid schema: {package.schema}")
+            results["is_valid"] = False
 
         # Validate base64 encoding
         try:
@@ -338,46 +359,46 @@ def verify_package_integrity(encrypted_package):
             base64.b64decode(package.aad_b64)
             base64.b64decode(package.wrapped_key_b64)
             base64.b64decode(package.ciphertext_b64)
-            results['base64_valid'] = True
+            results["base64_valid"] = True
         except Exception as e:
-            results['errors'].append(f"Invalid base64 encoding: {e}")
-            results['is_valid'] = False
+            results["errors"].append(f"Invalid base64 encoding: {e}")
+            results["is_valid"] = False
 
         # Validate AAD JSON
         try:
             aad_bytes = base64.b64decode(package.aad_b64)
-            aad = json.loads(aad_bytes.decode('utf-8'))
+            aad = json.loads(aad_bytes.decode("utf-8"))
             _verify_aad_compliance(aad)
-            results['aad_valid'] = True
+            results["aad_valid"] = True
         except Exception as e:
-            results['errors'].append(f"AAD validation failed: {e}")
-            results['is_valid'] = False
+            results["errors"].append(f"AAD validation failed: {e}")
+            results["is_valid"] = False
 
         # Check KMS accessibility (without unwrapping)
         try:
             kms_adapter = get_kms_adapter()
             # Just verify the adapter can be created and key exists
-            if hasattr(kms_adapter, 'verify_key_access'):
+            if hasattr(kms_adapter, "verify_key_access"):
                 kms_adapter.verify_key_access(package.kms_key_ref)
-            results['kms_accessible'] = True
+            results["kms_accessible"] = True
         except Exception as e:
-            results['errors'].append(f"KMS accessibility check failed: {e}")
-            results['is_valid'] = False
+            results["errors"].append(f"KMS accessibility check failed: {e}")
+            results["is_valid"] = False
 
         # Audit the verification
         audit.log_operation(
-            operation='verify_package',
-            outcome='success' if results['is_valid'] else 'failure',
+            operation="verify_package",
+            outcome="success" if results["is_valid"] else "failure",
             kms_key_ref=package.kms_key_ref,
-            verification_results=results
+            verification_results=results,
         )
 
         return results
 
     except Exception as e:
         logger.error("Package verification failed: %s", e)
-        results['is_valid'] = False
-        results['errors'].append(f"Verification error: {e}")
+        results["is_valid"] = False
+        results["errors"].append(f"Verification error: {e}")
         return results
 
 
@@ -388,7 +409,7 @@ def compute_package_hash(encrypted_package):
     else:
         package_json = encrypted_package.to_json()
 
-    return hashlib.sha256(package_json.encode('utf-8')).hexdigest()
+    return hashlib.sha256(package_json.encode("utf-8")).hexdigest()
 
 
 def extract_package_metadata(encrypted_package):
@@ -401,19 +422,19 @@ def extract_package_metadata(encrypted_package):
     # Decode and parse AAD
     try:
         aad_bytes = base64.b64decode(package.aad_b64)
-        aad = json.loads(aad_bytes.decode('utf-8'))
+        aad = json.loads(aad_bytes.decode("utf-8"))
 
         metadata = {
-            'schema': package.schema,
-            'kms_key_ref': package.kms_key_ref,
-            'dataset_id': aad.get('dataset_id'),
-            'modality': aad.get('modality'),
-            'pseudo_pid': aad.get('pseudo_pid'),
-            'pixel_hash': aad.get('pixel_hash'),
-            'produced_at': aad.get('produced_at'),
-            'policy_hash': aad.get('policy_hash'),
-            'policy': aad.get('policy'),
-            'package_hash': compute_package_hash(package)
+            "schema": package.schema,
+            "kms_key_ref": package.kms_key_ref,
+            "dataset_id": aad.get("dataset_id"),
+            "modality": aad.get("modality"),
+            "pseudo_pid": aad.get("pseudo_pid"),
+            "pixel_hash": aad.get("pixel_hash"),
+            "produced_at": aad.get("produced_at"),
+            "policy_hash": aad.get("policy_hash"),
+            "policy": aad.get("policy"),
+            "package_hash": compute_package_hash(package),
         }
 
         return metadata
@@ -423,8 +444,9 @@ def extract_package_metadata(encrypted_package):
         raise
 
 
-def batch_encrypt_files(file_paths, kms_key_ref=None, dataset_id=None,
-                        output_dir=None, **common_aad):
+def batch_encrypt_files(
+    file_paths, kms_key_ref=None, dataset_id=None, output_dir=None, **common_aad
+):
     """
     Batch encrypt multiple files with common parameters.
 
@@ -455,13 +477,13 @@ def batch_encrypt_files(file_paths, kms_key_ref=None, dataset_id=None,
             if output_dir:
                 output_path = output_dir / f"{file_path.stem}.pkg.json"
             else:
-                output_path = file_path.with_suffix('.pkg.json')
+                output_path = file_path.with_suffix(".pkg.json")
 
             # Get image info for AAD
             image_info = intake.get_image_info(file_path)
 
             # Read file data
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 file_data = f.read()
 
             # Encrypt with image-specific AAD
@@ -469,13 +491,13 @@ def batch_encrypt_files(file_paths, kms_key_ref=None, dataset_id=None,
                 plaintext_data=file_data,
                 kms_key_ref=kms_key_ref,
                 dataset_id=dataset_id,
-                modality=image_info['modality'],
-                pixel_hash=image_info['pixel_hash'],
-                **common_aad
+                modality=image_info["modality"],
+                pixel_hash=image_info["pixel_hash"],
+                **common_aad,
             )
 
             # Save encrypted package
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(package.to_json())
 
             results.append((str(file_path), str(output_path), package))

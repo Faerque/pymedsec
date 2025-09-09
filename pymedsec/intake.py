@@ -45,8 +45,7 @@ class ImageReader:
 
     def get_pixel_array(self):
         """Get pixel data as numpy array."""
-        raise NotImplementedError(
-            "Subclasses must implement get_pixel_array()")
+        raise NotImplementedError("Subclasses must implement get_pixel_array()")
 
     def get_metadata(self):
         """Get image metadata dictionary."""
@@ -74,9 +73,8 @@ class DicomReader(ImageReader):
             pixel_array = self.dataset.pixel_array
 
             # Handle different photometric interpretations
-            photometric = getattr(
-                self.dataset, 'PhotometricInterpretation', None)
-            if photometric == 'MONOCHROME1':
+            photometric = getattr(self.dataset, "PhotometricInterpretation", None)
+            if photometric == "MONOCHROME1":
                 # Invert grayscale for MONOCHROME1
                 pixel_array = np.max(pixel_array) - pixel_array
 
@@ -94,11 +92,22 @@ class DicomReader(ImageReader):
 
         # Safe extraction of common metadata
         safe_tags = [
-            'Modality', 'SOPClassUID', 'StudyInstanceUID', 'SeriesInstanceUID',
-            'InstanceNumber', 'ImageOrientationPatient', 'ImagePositionPatient',
-            'PixelSpacing', 'SliceThickness', 'PhotometricInterpretation',
-            'SamplesPerPixel', 'BitsAllocated', 'BitsStored', 'HighBit',
-            'Rows', 'Columns'
+            "Modality",
+            "SOPClassUID",
+            "StudyInstanceUID",
+            "SeriesInstanceUID",
+            "InstanceNumber",
+            "ImageOrientationPatient",
+            "ImagePositionPatient",
+            "PixelSpacing",
+            "SliceThickness",
+            "PhotometricInterpretation",
+            "SamplesPerPixel",
+            "BitsAllocated",
+            "BitsStored",
+            "HighBit",
+            "Rows",
+            "Columns",
         ]
 
         for tag in safe_tags:
@@ -126,38 +135,38 @@ class StandardImageReader(ImageReader):
 
     def close(self):
         """Clean up PIL image."""
-        if hasattr(self, 'image'):
+        if hasattr(self, "image"):
             self.image.close()
         super().close()
 
     def get_pixel_array(self):
         """Get pixel data as numpy array."""
-        if not hasattr(self, 'image'):
+        if not hasattr(self, "image"):
             raise RuntimeError("Image not loaded")
 
         return np.array(self.image)
 
     def get_metadata(self):
         """Get image metadata from EXIF."""
-        if not hasattr(self, 'image'):
+        if not hasattr(self, "image"):
             raise RuntimeError("Image not loaded")
 
         metadata = {
-            'format': self.image.format,
-            'mode': self.image.mode,
-            'size': self.image.size,
+            "format": self.image.format,
+            "mode": self.image.mode,
+            "size": self.image.size,
         }
 
         # Extract basic EXIF info (before sanitization)
         try:
             exif = self.image.getexif()
             if exif:
-                metadata['has_exif'] = True
-                metadata['exif_keys'] = len(exif)
+                metadata["has_exif"] = True
+                metadata["exif_keys"] = len(exif)
             else:
-                metadata['has_exif'] = False
+                metadata["has_exif"] = False
         except Exception:
-            metadata['has_exif'] = False
+            metadata["has_exif"] = False
 
         return metadata
 
@@ -175,9 +184,18 @@ def create_reader(filepath, format_hint=None):
     else:
         format_hint = filepath.suffix.lower()
 
-    if format_hint in ['.dcm', '.dicom', 'dicom']:
+    if format_hint in [".dcm", ".dicom", "dicom"]:
         return DicomReader(filepath)
-    elif format_hint in ['.png', '.jpg', '.jpeg', '.tiff', '.tif', 'png', 'jpeg', 'tiff']:
+    elif format_hint in [
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tiff",
+        ".tif",
+        "png",
+        "jpeg",
+        "tiff",
+    ]:
         return StandardImageReader(filepath)
     else:
         # Try to detect format by reading file header
@@ -203,15 +221,14 @@ def to_tensor(data, format_hint=None):
         # File path - load and convert
         with create_reader(data, format_hint) as reader:
             pixel_array = reader.get_pixel_array()
-    elif hasattr(data, 'pixel_array'):
+    elif hasattr(data, "pixel_array"):
         # DICOM dataset
         pixel_array = data.pixel_array
     elif isinstance(data, np.ndarray):
         # Already a numpy array
         pixel_array = data
     else:
-        raise ValueError(
-            f"Unsupported data type for tensor conversion: {type(data)}")
+        raise ValueError(f"Unsupported data type for tensor conversion: {type(data)}")
 
     # Convert to float32 and normalize to 0-1
     if pixel_array.dtype == np.uint8:
@@ -233,8 +250,13 @@ def to_tensor(data, format_hint=None):
             tensor = np.transpose(tensor, (2, 0, 1))
         # else assume already in (C, H, W) format
 
-    logger.debug("Converted to tensor shape: %s, dtype: %s, range: [%.3f, %.3f]",
-                 tensor.shape, tensor.dtype, tensor.min(), tensor.max())
+    logger.debug(
+        "Converted to tensor shape: %s, dtype: %s, range: [%.3f, %.3f]",
+        tensor.shape,
+        tensor.dtype,
+        tensor.min(),
+        tensor.max(),
+    )
 
     return tensor
 
@@ -254,18 +276,14 @@ def compute_pixel_hash(pixel_data):
 
 def extract_modality(metadata):
     """Extract modality from image metadata."""
-    if 'Modality' in metadata:
-        return metadata['Modality']
-    elif 'format' in metadata:
+    if "Modality" in metadata:
+        return metadata["Modality"]
+    elif "format" in metadata:
         # Map common image formats to modality
-        format_map = {
-            'PNG': 'OT',  # Other
-            'JPEG': 'OT',
-            'TIFF': 'OT'
-        }
-        return format_map.get(metadata['format'], 'OT')
+        format_map = {"PNG": "OT", "JPEG": "OT", "TIFF": "OT"}  # Other
+        return format_map.get(metadata["format"], "OT")
     else:
-        return 'OT'  # Other/Unknown
+        return "OT"  # Other/Unknown
 
 
 @contextmanager
@@ -288,12 +306,12 @@ def validate_image_integrity(filepath, expected_hash=None):
 
             if expected_hash and current_hash != expected_hash:
                 raise ValueError(
-                    f"Image integrity check failed. Expected: {expected_hash}, Got: {current_hash}")
+                    f"Image integrity check failed. Expected: {expected_hash}, Got: {current_hash}"
+                )
 
             return current_hash
     except Exception as e:
-        logger.error(
-            "Image integrity validation failed for %s: %s", filepath, e)
+        logger.error("Image integrity validation failed for %s: %s", filepath, e)
         raise
 
 
@@ -305,14 +323,14 @@ def get_image_info(filepath, format_hint=None):
             pixel_array = reader.get_pixel_array()
 
             info = {
-                'filepath': str(filepath),
-                'format': format_hint or Path(filepath).suffix,
-                'shape': pixel_array.shape,
-                'dtype': str(pixel_array.dtype),
-                'size_bytes': Path(filepath).stat().st_size,
-                'pixel_hash': compute_pixel_hash(pixel_array),
-                'modality': extract_modality(metadata),
-                'metadata': metadata
+                "filepath": str(filepath),
+                "format": format_hint or Path(filepath).suffix,
+                "shape": pixel_array.shape,
+                "dtype": str(pixel_array.dtype),
+                "size_bytes": Path(filepath).stat().st_size,
+                "pixel_hash": compute_pixel_hash(pixel_array),
+                "modality": extract_modality(metadata),
+                "metadata": metadata,
             }
 
             return info

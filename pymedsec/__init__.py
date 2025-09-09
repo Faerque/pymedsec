@@ -60,6 +60,7 @@ from . import crypto
 from . import sanitize
 from . import intake
 from . import config
+
 __version__ = "0.1.0"
 __author__ = "Healthcare Security Team"
 __email__ = "security@example.com"
@@ -71,38 +72,65 @@ __license__ = "Apache-2.0"
 def __getattr__(name):
     """Lazy loading of public API functions to avoid heavy imports at startup."""
     if name in [
-        "load_policy", "set_active_policy", "get_active_policy", "list_policies",
-        "scrub_dicom", "scrub_image", "encrypt_blob", "decrypt_blob",
-        "decrypt_to_tensor", "get_kms_client", "SecureImageDataset"
+        "load_policy",
+        "set_active_policy",
+        "get_active_policy",
+        "list_policies",
+        "scrub_dicom",
+        "scrub_image",
+        "encrypt_blob",
+        "decrypt_blob",
+        "decrypt_to_tensor",
+        "get_kms_client",
+        "SecureImageDataset",
     ]:
         from .public_api import (
-            load_policy, set_active_policy, get_active_policy, list_policies,
-            scrub_dicom, scrub_image, encrypt_blob, decrypt_blob,
-            decrypt_to_tensor, get_kms_client, SecureImageDataset
+            load_policy,
+            set_active_policy,
+            get_active_policy,
+            list_policies,
+            scrub_dicom,
+            scrub_image,
+            encrypt_blob,
+            decrypt_blob,
+            decrypt_to_tensor,
+            get_kms_client,
+            SecureImageDataset,
         )
+
         # Cache the imported functions in globals
-        globals().update({
-            'load_policy': load_policy,
-            'set_active_policy': set_active_policy,
-            'get_active_policy': get_active_policy,
-            'list_policies': list_policies,
-            'scrub_dicom': scrub_dicom,
-            'scrub_image': scrub_image,
-            'encrypt_blob': encrypt_blob,
-            'decrypt_blob': decrypt_blob,
-            'decrypt_to_tensor': decrypt_to_tensor,
-            'get_kms_client': get_kms_client,
-            'SecureImageDataset': SecureImageDataset
-        })
+        globals().update(
+            {
+                "load_policy": load_policy,
+                "set_active_policy": set_active_policy,
+                "get_active_policy": get_active_policy,
+                "list_policies": list_policies,
+                "scrub_dicom": scrub_dicom,
+                "scrub_image": scrub_image,
+                "encrypt_blob": encrypt_blob,
+                "decrypt_blob": decrypt_blob,
+                "decrypt_to_tensor": decrypt_to_tensor,
+                "get_kms_client": get_kms_client,
+                "SecureImageDataset": SecureImageDataset,
+            }
+        )
         return globals()[name]
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 # For static analysis and IDE support
 __all__ = [
-    "load_policy", "set_active_policy", "get_active_policy", "list_policies",
-    "scrub_dicom", "scrub_image", "encrypt_blob", "decrypt_blob",
-    "decrypt_to_tensor", "get_kms_client", "SecureImageDataset"
+    "load_policy",
+    "set_active_policy",
+    "get_active_policy",
+    "list_policies",
+    "scrub_dicom",
+    "scrub_image",
+    "encrypt_blob",
+    "decrypt_blob",
+    "decrypt_to_tensor",
+    "get_kms_client",
+    "SecureImageDataset",
 ]
 
 # Package-level imports for internal use
