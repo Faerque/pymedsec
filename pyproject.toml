@@ -1,0 +1,107 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pymedsec"
+version = "0.1.0"
+description = "HIPAA/GDPR-ready medical image sanitization and encryption library with blockchain audit anchoring"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Healthcare Security Team", email = "security@example.com"}
+]
+keywords = ["medical", "imaging", "security", "hipaa", "gdpr", "encryption", "dicom", "blockchain"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "cryptography>=41.0.0",
+    "pydicom>=2.3.0",
+    "Pillow>=9.0.0",
+    "python-dateutil>=2.8.0",
+    "pyyaml>=6.0",
+    "click>=8.0.0",
+    "numpy>=1.20.0",
+    "importlib-resources>=5.0.0; python_version<'3.9'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "flake8>=5.0.0",
+    "build>=0.10.0",
+    "twine>=4.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+ocr = [
+    "pytesseract>=0.3.0",
+]
+aws = [
+    "boto3>=1.26.0",
+]
+vault = [
+    "hvac>=1.0.0",
+]
+blockchain = [
+    "web3>=6.0.0",
+]
+
+[project.scripts]
+pymedsec = "healthcare_imgsec.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/example/pymedsec"
+Documentation = "https://pymedsec.readthedocs.io/"
+Repository = "https://github.com/example/pymedsec.git"
+Issues = "https://github.com/example/pymedsec/issues"
+Changelog = "https://github.com/example/pymedsec/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["healthcare_imgsec*"]
+
+[tool.setuptools.package-data]
+healthcare_imgsec = ["py.typed", "policies/*.yaml"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["healthcare_imgsec"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
