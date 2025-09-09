@@ -128,18 +128,29 @@ class TestAWSKMSAdapter:
 
     def test_initialization_with_config(self):
         """Test AWS KMS adapter initialization."""
-        adapter = AWSKMSAdapter(key_id='test-key', region_name='us-east-1')
-        assert adapter is not None
-        assert adapter.key_id == 'test-key'
-        assert adapter.region_name == 'us-east-1'
+        with patch('boto3.client') as mock_boto3_client:
+            mock_client = Mock()
+            mock_boto3_client.return_value = mock_client
+
+            adapter = AWSKMSAdapter(key_id='test-key', region_name='us-east-1')
+
+            assert adapter is not None
+            # The client is lazily loaded, so access it to trigger initialization
+            _ = adapter.client
+            mock_boto3_client.assert_called_once_with(
+                'kms',
+                region_name='us-east-1'
+            )
 
     def test_generate_data_key_success(self):
         """Test successful data key generation with AWS KMS."""
-        with patch.object(AWSKMSAdapter, 'client', new_callable=lambda: Mock()) as mock_client:
+        with patch('boto3.client') as mock_boto3_client:
+            mock_client = Mock()
             mock_client.generate_data_key.return_value = {
                 'Plaintext': b'32_byte_plaintext_key_data_here',
                 'CiphertextBlob': b'encrypted_key_data_from_aws_kms'
             }
+            mock_boto3_client.return_value = mock_client
 
             adapter = AWSKMSAdapter(
                 key_id="arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012")
@@ -149,10 +160,12 @@ class TestAWSKMSAdapter:
 
     def test_decrypt_success(self):
         """Test successful decryption with AWS KMS."""
-        with patch.object(AWSKMSAdapter, 'client', new_callable=lambda: Mock()) as mock_client:
+        with patch('boto3.client') as mock_boto3_client:
+            mock_client = Mock()
             mock_client.decrypt.return_value = {
                 'Plaintext': b'decrypted_key_data_32_bytes___'
             }
+            mock_boto3_client.return_value = mock_client
 
             adapter = AWSKMSAdapter(key_id='test-key')
             result = adapter.unwrap_data_key(b'encrypted_key_blob')
@@ -161,23 +174,28 @@ class TestAWSKMSAdapter:
 
     def test_kms_exception_handling(self):
         """Test handling of KMS exceptions."""
-        with patch.object(AWSKMSAdapter, 'client', new_callable=lambda: Mock()) as mock_client:
-            mock_client.generate_data_key.side_effect = Exception("KMS service error")
+        with patch('boto3.client') as mock_boto3_client:
+            mock_client = Mock()
+            mock_client.generate_data_key.side_effect = Exception(
+                "KMS service error")
+            mock_boto3_client.return_value = mock_client
 
             adapter = AWSKMSAdapter(key_id='test-key')
 
             with pytest.raises(RuntimeError) as exc_info:
-                adapter.generate_data_key(key_spec="256")  # Use supported key spec
+                adapter.generate_data_key(key_spec="AES_256")
 
             assert "KMS service error" in str(exc_info.value)
 
     def test_encryption_context_support(self):
         """Test encryption context support in AWS KMS."""
-        with patch.object(AWSKMSAdapter, 'client', new_callable=lambda: Mock()) as mock_client:
+        with patch('boto3.client') as mock_boto3_client:
+            mock_client = Mock()
             mock_client.generate_data_key.return_value = {
                 'Plaintext': b'test_key_data',
                 'CiphertextBlob': b'encrypted_blob'
             }
+            mock_boto3_client.return_value = mock_client
 
             adapter = AWSKMSAdapter(key_id='test-key')
 
@@ -192,31 +210,39 @@ class TestVaultKMSAdapter:
 
     def test_initialization_with_config(self):
         """Test Vault KMS adapter initialization."""
-        # Set required environment variable
-        with patch.dict(os.environ, {'VAULT_TOKEN': 'test-token'}):
-            with patch.object(VaultKMSAdapter, 'client', new_callable=lambda: Mock()) as mock_client:
-                mock_client.is_authenticated.return_value = True
+        with patch('hvac.Client') as mock_hvac_client:
+            mock_client = Mock()
+            mock_client.is_authenticated.return_value = True
+            mock_hvac_client.return_value = mock_client
 
+            # Set required environment variable
+            with patch.dict(os.environ, {'VAULT_TOKEN': 'test-token'}):
                 adapter = VaultKMSAdapter(
                     vault_url='https://vault.example.com:8200',
                     vault_token='vault_token',
                     mount_point='transit'
                 )
 
-                assert adapter is not None
+            assert adapter is not None
+            mock_hvac_client.assert_called_once_with(
+                url='https://vault.example.com:8200',
+                token='vault_token'
+            )
 
     def test_generate_data_key_success(self):
         """Test successful data key generation with Vault."""
-        with patch.dict(os.environ, {'VAULT_TOKEN': 'test-token'}):
-            with patch.object(VaultKMSAdapter, 'client', new_callable=lambda: Mock()) as mock_client:
-                mock_client.is_authenticated.return_value = True
-                mock_client.secrets.transit.generate_data_key.return_value = {
-                    'data': {
-                        'plaintext': base64.b64encode(b'32_byte_key_data_from_vault____').decode(),
-                        'ciphertext': 'vault:v1:encrypted_data_key'
-                    }
+        with patch('hvac.Client') as mock_hvac_client:
+            mock_client = Mock()
+            mock_client.is_authenticated.return_value = True
+            mock_client.secrets.transit.generate_data_key.return_value = {
+                'data': {
+                    'plaintext': base64.b64encode(b'32_byte_key_data_from_vault____').decode(),
+                    'ciphertext': 'vault:v1:encrypted_data_key'
                 }
+            }
+            mock_hvac_client.return_value = mock_client
 
+            with patch.dict(os.environ, {'VAULT_TOKEN': 'test-token'}):
                 adapter = VaultKMSAdapter(
                     vault_url='https://vault.example.com:8200',
                     vault_token='vault_token',
@@ -225,19 +251,21 @@ class TestVaultKMSAdapter:
                 result = adapter.generate_data_key(
                     key_ref="medical-images", key_spec="AES_256")
 
-                assert len(result) == 32
+            assert len(result) == 32
 
     def test_decrypt_success(self):
         """Test successful decryption with Vault."""
-        with patch.dict(os.environ, {'VAULT_TOKEN': 'test-token'}):
-            with patch.object(VaultKMSAdapter, 'client', new_callable=lambda: Mock()) as mock_client:
-                mock_client.is_authenticated.return_value = True
-                mock_client.secrets.transit.decrypt_data.return_value = {
-                    'data': {
-                        'plaintext': base64.b64encode(b'decrypted_key_data_32_bytes___').decode()
-                    }
+        with patch('hvac.Client') as mock_hvac_client:
+            mock_client = Mock()
+            mock_client.is_authenticated.return_value = True
+            mock_client.secrets.transit.decrypt_data.return_value = {
+                'data': {
+                    'plaintext': base64.b64encode(b'decrypted_key_data_32_bytes___').decode()
                 }
+            }
+            mock_hvac_client.return_value = mock_client
 
+            with patch.dict(os.environ, {'VAULT_TOKEN': 'test-token'}):
                 adapter = VaultKMSAdapter(
                     vault_url='https://vault.example.com:8200',
                     vault_token='vault_token',
@@ -245,64 +273,39 @@ class TestVaultKMSAdapter:
                 )
                 result = adapter.unwrap_data_key('vault:v1:encrypted_data', 'test-key')
 
-                assert result == b'decrypted_key_data_32_bytes___'
+            assert result == b'decrypted_key_data_32_bytes___'
 
     def test_authentication_failure(self):
         """Test handling of Vault authentication failures."""
-        with patch.dict(os.environ, {'VAULT_TOKEN': 'invalid_token'}):
-            # Mock at the system level where hvac is imported
-            with patch('builtins.__import__') as mock_import:
-                original_import = __import__
+        with patch('hvac.Client') as mock_hvac_client:
+            mock_client = Mock()
+            mock_client.is_authenticated.return_value = False
+            mock_hvac_client.return_value = mock_client
 
-                def side_effect(name, *args, **kwargs):
-                    if name == 'hvac':
-                        mock_hvac = Mock()
-                        mock_client = Mock()
-                        mock_client.is_authenticated.return_value = False
-                        mock_hvac.Client.return_value = mock_client
-                        return mock_hvac
-                    return original_import(name, *args, **kwargs)
-
-                mock_import.side_effect = side_effect
-
-                adapter = VaultKMSAdapter(
-                    vault_url='https://vault.example.com:8200',
-                    vault_token='invalid_token',
-                    mount_point='transit'
-                )
-
-                # The error should occur when accessing the client
+            with patch.dict(os.environ, {'VAULT_TOKEN': 'invalid_token'}):
                 with pytest.raises(RuntimeError) as exc_info:
-                    _ = adapter.client
+                    VaultKMSAdapter(
+                        vault_url='https://vault.example.com:8200',
+                        vault_token='invalid_token',
+                        mount_point='transit'
+                    )
 
-                assert "authentication" in str(exc_info.value).lower()
+            assert "authentication" in str(exc_info.value).lower()
 
     def test_vault_connection_error(self):
         """Test handling of Vault connection errors."""
-        with patch.dict(os.environ, {'VAULT_TOKEN': 'vault_token'}):
-            # Mock at the system level where hvac is imported
-            with patch('builtins.__import__') as mock_import:
-                original_import = __import__
+        with patch('hvac.Client') as mock_hvac_client:
+            mock_hvac_client.side_effect = Exception("Connection refused")
 
-                def side_effect(name, *args, **kwargs):
-                    if name == 'hvac':
-                        mock_hvac = Mock()
-                        mock_hvac.Client.side_effect = Exception("Connection refused")
-                        return mock_hvac
-                    return original_import(name, *args, **kwargs)
-
-                mock_import.side_effect = side_effect
-
-                adapter = VaultKMSAdapter(
-                    vault_url='https://unreachable.vault.com:8200',
-                    vault_token='vault_token',
-                    mount_point='transit'
-                )
-
+            with patch.dict(os.environ, {'VAULT_TOKEN': 'vault_token'}):
                 with pytest.raises(RuntimeError) as exc_info:
-                    _ = adapter.client
+                    VaultKMSAdapter(
+                        vault_url='https://unreachable.vault.com:8200',
+                        vault_token='vault_token',
+                        mount_point='transit'
+                    )
 
-                assert "Connection refused" in str(exc_info.value)
+            assert "Connection refused" in str(exc_info.value)
 
 
 class TestKMSAdapterFactory:
@@ -317,24 +320,28 @@ class TestKMSAdapterFactory:
 
     def test_create_aws_adapter(self):
         """Test creation of AWS adapter."""
-        from pymedsec.kms import get_kms_client
-        adapter = get_kms_client("aws", key_id="test-key")
+        with patch('boto3.client'):
+            from pymedsec.kms import get_kms_client
+            adapter = get_kms_client("aws", key_id="test-key")
 
-        assert isinstance(adapter, AWSKMSAdapter)
+            assert isinstance(adapter, AWSKMSAdapter)
 
     def test_create_vault_adapter(self):
         """Test creation of Vault adapter."""
-        from pymedsec.kms import get_kms_client
+        with patch('hvac.Client') as mock_hvac_client:
+            mock_client = Mock()
+            mock_client.is_authenticated.return_value = True
+            mock_hvac_client.return_value = mock_client
 
-        # We can create the adapter without mocking since construction doesn't require hvac
-        adapter = get_kms_client(
-            "vault",
-            url="https://vault.example.com:8200",
-            token="test-token",
-            key_name="test-key"
-        )
+            from pymedsec.kms import get_kms_client
+            adapter = get_kms_client(
+                "vault",
+                url="https://vault.example.com:8200",
+                token="test-token",
+                key_name="test-key"
+            )
 
-        assert isinstance(adapter, VaultAdapter)
+            assert isinstance(adapter, VaultAdapter)
 
     def test_unsupported_provider(self):
         """Test handling of unsupported KMS providers."""

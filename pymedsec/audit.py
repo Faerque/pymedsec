@@ -54,7 +54,7 @@ class AuditLogger:
             else:
                 from .blockchain import create_blockchain_adapter
                 adapter = create_blockchain_adapter()
-                
+
             if adapter:
                 logger.info("Blockchain anchoring enabled: %s",
                             os.getenv('IMGSEC_BLOCKCHAIN_BACKEND', 'none'))

@@ -282,8 +282,8 @@ def _perform_ocr_redaction(pixel_array):
         # Convert to PIL Image for OCR
         if pixel_array.dtype != np.uint8:
             # Normalize to uint8
-            normalized = ((pixel_array - pixel_array.min()) /
-                          (pixel_array.max() - pixel_array.min()) * 255).astype(np.uint8)
+            normalized = ((pixel_array - pixel_array.min())
+                          / (pixel_array.max() - pixel_array.min()) * 255).astype(np.uint8)
         else:
             normalized = pixel_array
 
@@ -521,32 +521,32 @@ def compute_sanitization_hash(dataset_or_path):
 
 def sanitize_dicom_bytes(dicom_bytes, pseudo_pid=None, dataset_id=None):
     """Sanitize DICOM data from bytes.
-    
+
     Args:
         dicom_bytes (bytes): Raw DICOM data
         pseudo_pid (str, optional): Pseudonymized patient ID to use
         dataset_id (str, optional): Dataset identifier for tracking
-        
+
     Returns:
         tuple: (sanitized_bytes, sanitization_report)
     """
     try:
         import pydicom
         from io import BytesIO
-        
+
         # Parse DICOM from bytes
         dataset = pydicom.dcmread(BytesIO(dicom_bytes))
-        
+
         # Sanitize the dataset
         sanitized_dataset, report = sanitize_dicom(dataset, pseudo_pid, dataset_id)
-        
+
         # Convert back to bytes
         output_buffer = BytesIO()
         sanitized_dataset.save_as(output_buffer)
         sanitized_bytes = output_buffer.getvalue()
-        
+
         return sanitized_bytes, report
-        
+
     except Exception as e:
         logger.error("Failed to sanitize DICOM bytes: %s", e)
         raise RuntimeError(f"DICOM bytes sanitization failed: {e}") from e

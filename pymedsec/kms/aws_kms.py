@@ -16,10 +16,13 @@ logger = logging.getLogger(__name__)
 class AWSKMSAdapter(KMSAdapter):
     """AWS KMS adapter using boto3."""
 
-    def __init__(self, key_id=None, region_name=None, profile_name=None):
+    def __init__(self, key_id=None, region_name=None, profile_name=None,
+                 access_key_id=None, secret_access_key=None):
         self.key_id = key_id or os.getenv('AWS_KMS_KEY_ID')
         self.region_name = region_name or os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
         self.profile_name = profile_name or os.getenv('AWS_PROFILE')
+        self.access_key_id = access_key_id
+        self.secret_access_key = secret_access_key
         self._client = None
 
     @property
@@ -33,6 +36,13 @@ class AWSKMSAdapter(KMSAdapter):
                 if self.profile_name:
                     session = boto3.Session(profile_name=self.profile_name)
                     self._client = session.client('kms', region_name=self.region_name)
+                elif self.access_key_id and self.secret_access_key:
+                    self._client = boto3.client(
+                        'kms',
+                        region_name=self.region_name,
+                        aws_access_key_id=self.access_key_id,
+                        aws_secret_access_key=self.secret_access_key
+                    )
                 else:
                     self._client = boto3.client('kms', region_name=self.region_name)
 
@@ -56,9 +66,9 @@ class AWSKMSAdapter(KMSAdapter):
 
         try:
             # Convert key_spec to AWS format
-            if key_spec == '256':
+            if key_spec in ('256', 'AES_256'):
                 aws_key_spec = 'AES_256'
-            elif key_spec == '128':
+            elif key_spec in ('128', 'AES_128'):
                 aws_key_spec = 'AES_128'
             else:
                 raise ValueError(f"Unsupported key spec: {key_spec}")

@@ -36,30 +36,40 @@ class MockKMSAdapter(KMSAdapter):
 
     def generate_data_key(self, key_ref=None, key_spec='256', key_id=None, **kwargs):
         """Generate a random data key.
-        
+
         Args:
             key_ref: Key reference (preferred parameter)
-            key_spec: Key specification ('256' or '128')
+            key_spec: Key specification ('256', '128', 'AES_256', or 'AES_128')
             key_id: Legacy parameter name for key_ref
             **kwargs: Additional arguments for compatibility
+
+        Returns:
+            dict: Dictionary with 'plaintext_key' and 'encrypted_key' for testing compatibility
         """
         # Support both key_ref and legacy key_id parameter
         if key_ref is None and key_id is not None:
             key_ref = key_id
         elif key_ref is None:
             key_ref = "mock-key-default"
-            
+
         try:
-            if key_spec == '256':
+            if key_spec in ('256', 'AES_256'):
                 key_size = 32  # 256 bits
-            elif key_spec == '128':
+            elif key_spec in ('128', 'AES_128'):
                 key_size = 16  # 128 bits
             else:
                 raise ValueError(f"Unsupported key spec: {key_spec}")
 
             data_key = os.urandom(key_size)
+            wrapped_key = self.wrap_data_key(data_key, key_ref)
+
             logger.debug("Generated mock data key for key_ref: %s", key_ref)
-            return data_key
+
+            # Return dict format for test compatibility
+            return {
+                'plaintext_key': data_key,
+                'encrypted_key': wrapped_key
+            }
 
         except Exception as e:
             logger.error("Mock data key generation failed: %s", e)

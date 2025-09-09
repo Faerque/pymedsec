@@ -2,7 +2,6 @@
 Test configuration and fixtures for pymedsec package.
 """
 from pymedsec.kms.mock import MockKMSAdapter
-from pymedsec.config import SecurityConfig
 import os
 import tempfile
 import shutil
@@ -13,6 +12,26 @@ from unittest.mock import Mock, patch
 # Import the package modules
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+# Set up required environment variables for testing
+os.environ.setdefault('IMGSEC_POLICY', 'mock')
+os.environ.setdefault('IMGSEC_KMS_BACKEND', 'mock')
+os.environ.setdefault('IMGSEC_KMS_KEY_REF', 'test-key')
+
+
+@pytest.fixture(autouse=True)
+def setup_test_environment():
+    """Set up the test environment with required variables."""
+    test_env = {
+        'IMGSEC_POLICY': 'mock',
+        'IMGSEC_KMS_BACKEND': 'mock',
+        'IMGSEC_KMS_KEY_REF': 'test-key',
+        'IMGSEC_AUDIT_PATH': './test_audit.jsonl',
+        'IMGSEC_ACTOR': 'test-user'
+    }
+
+    with patch.dict(os.environ, test_env):
+        yield
 
 
 @pytest.fixture
@@ -60,11 +79,7 @@ def mock_config():
             'allowed_formats': ['DICOM', 'PNG', 'JPEG', 'TIFF']
         }
     }
-
-    with patch.object(SecurityConfig, '_load_from_file', return_value=config_data):
-        config = SecurityConfig()
-        config._config = config_data
-        yield config
+    return config_data
 
 
 @pytest.fixture

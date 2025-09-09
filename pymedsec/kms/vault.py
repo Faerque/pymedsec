@@ -65,9 +65,9 @@ class VaultAdapter(KMSAdapter):
 
         try:
             # Vault Transit doesn't have generate_data_key, so we generate locally
-            if key_spec == '256':
+            if key_spec in ('256', 'AES_256'):
                 key_size = 32  # 256 bits
-            elif key_spec == '128':
+            elif key_spec in ('128', 'AES_128'):
                 key_size = 16  # 128 bits
             else:
                 raise ValueError(f"Unsupported key spec: {key_spec}")
