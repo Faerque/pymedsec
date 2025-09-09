@@ -1,2 +1,0 @@
-[console_scripts]
-imgsec = healthcare_imgsec.cli:main
