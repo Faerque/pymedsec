@@ -443,6 +443,7 @@ print(f"Bits allocated: {result.metadata['BitsAllocated']}")
 ```
 
 **Expected Input (DICOM Tags):**
+
 ```
 (0008,0020) Study Date: '20250909'
 (0008,0030) Study Time: '143015.123000'
@@ -461,6 +462,7 @@ print(f"Bits allocated: {result.metadata['BitsAllocated']}")
 ```
 
 **Expected Output (Sanitized):**
+
 ```
 === DICOM Processing ===
 Original file size: 2,847,392 bytes
@@ -508,6 +510,7 @@ print(f"Metadata found: {len(result.original_metadata)} fields")
 ```
 
 **Expected Input (PNG EXIF):**
+
 ```
 File: microscopy_sample.png (1,234,567 bytes)
 Image Size: 2048x1536 pixels
@@ -528,6 +531,7 @@ EXIF Metadata:
 ```
 
 **Expected Output (Sanitized PNG):**
+
 ```
 === PNG Processing ===
 Original file size: 1,234,567 bytes
@@ -542,7 +546,7 @@ Processing Time: 0.089 seconds
 
 Sanitized Metadata:
   Make: [REMOVED]
-  Model: [REMOVED] 
+  Model: [REMOVED]
   DateTime: [REMOVED]
   Software: [REMOVED]
   Artist: [REMOVED]
@@ -570,6 +574,7 @@ result = scrub_image(original_jpeg, format_hint="jpeg", policy=policy)
 ```
 
 **Expected Input (JPEG EXIF/IPTC):**
+
 ```
 File: wound_documentation.jpg (856,432 bytes)
 Image Size: 4032x3024 pixels
@@ -593,7 +598,7 @@ IPTC Metadata:
   Copyright Notice: 'Metropolitan Hospital 2025'
   City: 'New York'
   Country: 'USA'
-  
+
 XMP Metadata:
   Creator: 'Wound Care Team'
   Subject: ['medical', 'documentation', 'patient-12345678']
@@ -601,6 +606,7 @@ XMP Metadata:
 ```
 
 **Expected Output (Sanitized JPEG):**
+
 ```
 === JPEG Processing ===
 Original file size: 856,432 bytes
@@ -626,7 +632,7 @@ Sanitized Metadata:
   Keywords: [REMOVED]
   Copyright Notice: [REMOVED]
   Creator: [REMOVED]
-  
+
   # Technical metadata preserved:
   Image Width: 4032 pixels
   Image Height: 3024 pixels
@@ -651,6 +657,7 @@ result = scrub_image(original_tiff, format_hint="tiff", policy=policy, preserve_
 ```
 
 **Expected Input (TIFF Tags):**
+
 ```
 File: histology_slide_001.tiff (45,678,234 bytes)
 Image Size: 32768x24576 pixels (804 megapixels)
@@ -667,7 +674,7 @@ TIFF Tags:
   Model: 'ScanScope AT2'
   DocumentName: 'slide_patient_12345678.svs'
   HostComputer: 'PATHOLOGY-WS-001'
-  
+
   # Aperio-specific tags:
   Aperio.Filename: 'patient_12345678_slide_001'
   Aperio.Date: '09/09/2025'
@@ -676,7 +683,7 @@ TIFF Tags:
   Aperio.AppMag: '20'
   Aperio.StripeWidth: '2048'
   Aperio.ScanScope ID: 'SS1234'
-  
+
   # Technical preservation tags:
   XResolution: 0.25 μm/pixel
   YResolution: 0.25 μm/pixel
@@ -686,6 +693,7 @@ TIFF Tags:
 ```
 
 **Expected Output (Sanitized TIFF):**
+
 ```
 === TIFF Processing ===
 Original file size: 45,678,234 bytes
@@ -709,14 +717,14 @@ Sanitized Metadata:
   Model: [REMOVED]
   DocumentName: [REMOVED]
   HostComputer: [REMOVED]
-  
+
   # Aperio tags removed:
   Aperio.Filename: [REMOVED]
   Aperio.Date: [REMOVED]
   Aperio.Time: [REMOVED]
   Aperio.User: [REMOVED]
   Aperio.ScanScope ID: [REMOVED]
-  
+
   # Technical metadata preserved:
   Image Width: 32768 pixels
   Image Height: 24576 pixels
@@ -745,14 +753,14 @@ for image_file in image_dir.glob("*"):
     if image_file.suffix.lower() in ['.dcm', '.png', '.jpg', '.jpeg', '.tiff', '.tif']:
         with open(image_file, "rb") as f:
             data = f.read()
-        
+
         # Auto-detect format or use extension hint
         format_hint = image_file.suffix.lower().replace('.', '')
         if format_hint == 'dcm':
             result = scrub_dicom(data, policy=policy, pseudo_pid=f"BATCH_{image_file.stem}")
         else:
             result = scrub_image(data, format_hint=format_hint, policy=policy)
-        
+
         results[image_file.name] = {
             'original_size': len(data),
             'sanitized_size': len(result.sanitized_data),
@@ -770,6 +778,7 @@ for filename, stats in results.items():
 ```
 
 **Expected Batch Output:**
+
 ```
 mri_brain_001.dcm:
   Format: DICOM
