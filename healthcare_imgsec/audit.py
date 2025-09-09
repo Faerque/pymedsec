@@ -11,7 +11,7 @@ import logging
 import os
 import hashlib
 import hmac
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import config
@@ -71,7 +71,7 @@ class AuditLogger:
         """Initialize new audit log with header."""
         header = {
             'audit_log_version': '1.0',
-            'initialized_at': datetime.utcnow().isoformat() + 'Z',
+            'initialized_at': datetime.now(timezone.utc).isoformat(),
             'policy_hash': config.get_config().policy_hash,
             'kms_key_ref': config.get_config().kms_key_ref
         }
@@ -105,7 +105,7 @@ class AuditLogger:
 
     def _write_audit_line(self, operation, data):
         """Write a single audit line with HMAC signature and optional blockchain anchoring."""
-        timestamp = datetime.utcnow().isoformat() + 'Z'
+        timestamp = datetime.now(timezone.utc).isoformat()
 
         # Build audit entry
         entry = {
@@ -452,7 +452,7 @@ def get_audit_stats():
             'total_lines': len(lines),
             'file_size_bytes': audit_logger.audit_path.stat().st_size,
             'last_modified': datetime.fromtimestamp(
-                audit_logger.audit_path.stat().st_mtime
+                audit_logger.audit_path.stat().st_mtime, tz=timezone.utc
             ).isoformat(),
             'operations': {},
             'outcomes': {}
