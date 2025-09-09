@@ -22,9 +22,10 @@ logger = logging.getLogger(__name__)
 class AuditLogger:
     """Tamper-evident audit logger with HMAC signing and blockchain anchoring."""
 
-    def __init__(self, audit_path=None, audit_secret=None):
+    def __init__(self, audit_path=None, audit_secret=None, blockchain_config=None):
         self.audit_path = Path(audit_path or config.get_config().audit_path)
         self.audit_secret = audit_secret or self._get_audit_secret()
+        self.blockchain_config = blockchain_config
         self.line_count = 0
         self.anchor_interval = 1000  # Rolling anchor every N lines
         self.last_anchor_hash = None
@@ -46,8 +47,14 @@ class AuditLogger:
     def _initialize_blockchain(self):
         """Initialize blockchain adapter if configured."""
         try:
-            from .blockchain import create_blockchain_adapter
-            adapter = create_blockchain_adapter()
+            # Use blockchain_config if provided
+            if self.blockchain_config:
+                from .blockchain import create_blockchain_adapter
+                adapter = create_blockchain_adapter(config=self.blockchain_config)
+            else:
+                from .blockchain import create_blockchain_adapter
+                adapter = create_blockchain_adapter()
+                
             if adapter:
                 logger.info("Blockchain anchoring enabled: %s",
                             os.getenv('IMGSEC_BLOCKCHAIN_BACKEND', 'none'))
@@ -589,11 +596,11 @@ def search_audit_logs(query_filters):
 
 def generate_audit_signature(entry_data, config_obj):
     """Generate HMAC signature for audit entry data.
-    
+
     Args:
         entry_data (dict): Audit entry data
         config_obj: Configuration object with audit settings
-        
+
     Returns:
         str: HMAC-SHA256 signature
     """
@@ -616,11 +623,11 @@ def generate_audit_signature(entry_data, config_obj):
 
 def verify_audit_chain(audit_file_path, config_obj):
     """Verify the integrity of an audit log chain.
-    
+
     Args:
         audit_file_path (str): Path to audit log file
         config_obj: Configuration object with audit settings
-        
+
     Returns:
         bool: True if chain is valid, False otherwise
     """
@@ -639,7 +646,8 @@ def verify_audit_chain(audit_file_path, config_obj):
                         return False
 
                     # Recompute signature
-                    entry_json = json.dumps(entry, sort_keys=True, separators=(',', ':'))
+                    entry_json = json.dumps(
+                        entry, sort_keys=True, separators=(',', ':'))
                     computed_signature = hmac.new(
                         signing_key.encode('utf-8'),
                         entry_json.encode('utf-8'),

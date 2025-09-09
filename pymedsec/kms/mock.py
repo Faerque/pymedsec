@@ -34,8 +34,21 @@ class MockKMSAdapter(KMSAdapter):
         logger.warning("This is for development and testing only!")
         logger.warning("=" * 60)
 
-    def generate_data_key(self, key_ref, key_spec='256'):
-        """Generate a random data key."""
+    def generate_data_key(self, key_ref=None, key_spec='256', key_id=None, **kwargs):
+        """Generate a random data key.
+        
+        Args:
+            key_ref: Key reference (preferred parameter)
+            key_spec: Key specification ('256' or '128')
+            key_id: Legacy parameter name for key_ref
+            **kwargs: Additional arguments for compatibility
+        """
+        # Support both key_ref and legacy key_id parameter
+        if key_ref is None and key_id is not None:
+            key_ref = key_id
+        elif key_ref is None:
+            key_ref = "mock-key-default"
+            
         try:
             if key_spec == '256':
                 key_size = 32  # 256 bits
@@ -99,6 +112,12 @@ class MockKMSAdapter(KMSAdapter):
         except Exception as e:
             logger.error("Mock key unwrapping failed: %s", e)
             raise RuntimeError(f"Mock KMS key unwrapping failed: {e}") from e
+
+    def decrypt(self, encrypted_data, key_ref=None):
+        """Decrypt data - alias for unwrap_data_key for compatibility."""
+        if key_ref is None:
+            key_ref = "mock-key-default"
+        return self.unwrap_data_key(encrypted_data, key_ref)
 
     def verify_key_access(self, key_ref):
         """Always return True for mock adapter."""

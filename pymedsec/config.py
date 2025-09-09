@@ -89,6 +89,39 @@ class SecurityConfig:
                          self.policy_path, e)
             raise
 
+    def _load_from_file(self, file_path):
+        """Load configuration from a file (for testing purposes).
+        
+        Args:
+            file_path (str): Path to the configuration file
+            
+        Returns:
+            dict: Loaded configuration data
+        """
+        try:
+            path = Path(file_path)
+            if not path.exists():
+                raise FileNotFoundError(f"Configuration file not found: {file_path}")
+                
+            with open(path, 'r', encoding='utf-8') as f:
+                if path.suffix.lower() in ['.yaml', '.yml']:
+                    config_data = yaml.safe_load(f)
+                elif path.suffix.lower() == '.json':
+                    import json
+                    config_data = json.load(f)
+                else:
+                    # Assume YAML by default
+                    config_data = yaml.safe_load(f)
+                    
+            if not config_data:
+                raise ValueError("Configuration file is empty or invalid")
+                
+            return config_data
+            
+        except Exception as e:
+            logger.error("Failed to load configuration from %s: %s", file_path, e)
+            raise
+
     def _compute_policy_hash(self):
         """Compute SHA-256 hash of policy for tamper detection."""
         policy_str = yaml.dump(

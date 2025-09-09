@@ -129,4 +129,14 @@ def get_kms_adapter():
         raise ValueError(f"Unsupported KMS backend: {backend}")
 
 
-__all__ = ['get_kms_adapter']
+def create_kms_adapter(backend=None, **kwargs):
+    """Create a KMS adapter instance. Alias for get_kms_client."""
+    if backend is None:
+        # Use the configured backend
+        return get_kms_adapter()
+    else:
+        # Use the specified backend
+        return get_kms_client(backend, **kwargs)
+
+
+__all__ = ['get_kms_adapter', 'get_kms_client', 'create_kms_adapter']
