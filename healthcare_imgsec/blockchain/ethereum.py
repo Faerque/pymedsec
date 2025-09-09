@@ -11,7 +11,7 @@ try:
     from web3 import Web3
     WEB3_AVAILABLE = True
 except ImportError:
-    Web3 = None
+    Web3 = None  # type: ignore
     WEB3_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,6 @@ class EthereumBlockchainAdapter(BlockchainAdapter):
                 "Install with: pip install web3"
             )
 
-        self.Web3 = Web3
-
         # Get configuration
         self.rpc_url = self.config.get(
             'rpc_url',
@@ -48,7 +46,7 @@ class EthereumBlockchainAdapter(BlockchainAdapter):
         )
 
         # Initialize web3
-        self.w3 = self.Web3(self.Web3.HTTPProvider(self.rpc_url))
+        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))  # type: ignore
 
         if not self.w3.is_connected():
             raise ConnectionError(

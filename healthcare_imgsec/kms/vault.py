@@ -17,11 +17,13 @@ logger = logging.getLogger(__name__)
 class VaultAdapter(KMSAdapter):
     """HashiCorp Vault Transit engine adapter."""
 
-    def __init__(self, vault_url=None, vault_token=None, mount_point=None):
+    def __init__(self, vault_url=None, vault_token=None, mount_point=None, key_name=None):
+        """Initialize Vault adapter with optional key name."""
         self.vault_url = vault_url or os.getenv(
             'VAULT_ADDR', 'http://localhost:8200')
         self.vault_token = vault_token or os.getenv('VAULT_TOKEN')
         self.mount_point = mount_point or os.getenv('VAULT_MOUNT', 'transit')
+        self.key_name = key_name or os.getenv('VAULT_KEY_NAME')
         self._client = None
 
         if not self.vault_token:
@@ -54,8 +56,13 @@ class VaultAdapter(KMSAdapter):
 
         return self._client
 
-    def generate_data_key(self, key_ref, key_spec='256'):
+    def generate_data_key(self, key_ref=None, key_spec='256'):
         """Generate data key using Vault Transit."""
+        # Use configured key_name if no key_ref provided
+        key_name = key_ref or self.key_name
+        if not key_name:
+            raise ValueError("No key_name specified in constructor or method call")
+            
         try:
             # Vault Transit doesn't have generate_data_key, so we generate locally
             if key_spec == '256':
@@ -66,21 +73,26 @@ class VaultAdapter(KMSAdapter):
                 raise ValueError(f"Unsupported key spec: {key_spec}")
 
             data_key = os.urandom(key_size)
-            logger.debug("Generated local data key for Vault key: %s", key_ref)
+            logger.debug("Generated local data key for Vault key: %s", key_name)
             return data_key
 
         except Exception as e:
             logger.error("Failed to generate data key for Vault: %s", e)
             raise RuntimeError(f"Vault data key generation failed: {e}") from e
 
-    def wrap_data_key(self, plaintext_key, key_ref):
+    def wrap_data_key(self, plaintext_key, key_ref=None):
         """Wrap data key using Vault Transit encrypt."""
+        # Use configured key_name if no key_ref provided
+        key_name = key_ref or self.key_name
+        if not key_name:
+            raise ValueError("No key_name specified in constructor or method call")
+            
         try:
             # Encode plaintext key to base64 for Vault
             b64_plaintext = base64.b64encode(plaintext_key).decode('utf-8')
 
             response = self.client.secrets.transit.encrypt_data(
-                name=key_ref,
+                name=key_name,
                 plaintext=b64_plaintext,
                 mount_point=self.mount_point
             )
@@ -92,15 +104,20 @@ class VaultAdapter(KMSAdapter):
             # Vault returns "vault:v1:base64data"
             wrapped_data = ciphertext.encode('utf-8')
 
-            logger.debug("Wrapped data key using Vault key: %s", key_ref)
+            logger.debug("Wrapped data key using Vault key: %s", key_name)
             return wrapped_data
 
         except Exception as e:
             logger.error("Failed to wrap data key with Vault: %s", e)
             raise RuntimeError(f"Vault key wrapping failed: {e}") from e
 
-    def unwrap_data_key(self, wrapped_key, key_ref):
+    def unwrap_data_key(self, wrapped_key, key_ref=None):
         """Unwrap data key using Vault Transit decrypt."""
+        # Use configured key_name if no key_ref provided
+        key_name = key_ref or self.key_name
+        if not key_name:
+            raise ValueError("No key_name specified in constructor or method call")
+            
         try:
             # Convert wrapped_key back to string format expected by Vault
             if isinstance(wrapped_key, bytes):
@@ -109,7 +126,7 @@ class VaultAdapter(KMSAdapter):
                 ciphertext = wrapped_key
 
             response = self.client.secrets.transit.decrypt_data(
-                name=key_ref,
+                name=key_name,
                 ciphertext=ciphertext,
                 mount_point=self.mount_point
             )
@@ -118,7 +135,7 @@ class VaultAdapter(KMSAdapter):
             b64_plaintext = response['data']['plaintext']
             plaintext_key = base64.b64decode(b64_plaintext)
 
-            logger.debug("Unwrapped data key using Vault key: %s", key_ref)
+            logger.debug("Unwrapped data key using Vault key: %s", key_name)
             return plaintext_key
 
         except Exception as e:

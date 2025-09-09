@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 class AWSKMSAdapter(KMSAdapter):
     """AWS KMS adapter using boto3."""
 
-    def __init__(self, region_name=None):
-        self.region_name = region_name or os.getenv(
-            'AWS_DEFAULT_REGION', 'us-east-1')
+    def __init__(self, key_id=None, region_name=None, profile_name=None):
+        self.key_id = key_id or os.getenv('AWS_KMS_KEY_ID')
+        self.region_name = region_name or os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+        self.profile_name = profile_name or os.getenv('AWS_PROFILE')
         self._client = None
 
     @property
@@ -27,10 +28,15 @@ class AWSKMSAdapter(KMSAdapter):
         if self._client is None:
             try:
                 import boto3
-                self._client = boto3.client(
-                    'kms', region_name=self.region_name)
-                logger.debug(
-                    "Initialized AWS KMS client for region: %s", self.region_name)
+                
+                # Create session with profile if specified
+                if self.profile_name:
+                    session = boto3.Session(profile_name=self.profile_name)
+                    self._client = session.client('kms', region_name=self.region_name)
+                else:
+                    self._client = boto3.client('kms', region_name=self.region_name)
+                    
+                logger.debug("Initialized AWS KMS client for region: %s", self.region_name)
             except ImportError as e:
                 raise RuntimeError(
                     "boto3 library required for AWS KMS adapter") from e
@@ -40,8 +46,13 @@ class AWSKMSAdapter(KMSAdapter):
 
         return self._client
 
-    def generate_data_key(self, key_ref, key_spec='256'):
+    def generate_data_key(self, key_ref=None, key_spec='256'):
         """Generate data key using AWS KMS."""
+        # Use configured key_id if no key_ref provided
+        key_id = key_ref or self.key_id
+        if not key_id:
+            raise ValueError("No key_id specified in constructor or method call")
+            
         try:
             # Convert key_spec to AWS format
             if key_spec == '256':
@@ -52,11 +63,11 @@ class AWSKMSAdapter(KMSAdapter):
                 raise ValueError(f"Unsupported key spec: {key_spec}")
 
             response = self.client.generate_data_key(
-                KeyId=key_ref,
+                KeyId=key_id,
                 KeySpec=aws_key_spec
             )
 
-            logger.debug("Generated data key using AWS KMS key: %s", key_ref)
+            logger.debug("Generated data key using AWS KMS key: %s", key_id)
             return response['Plaintext']
 
         except Exception as e:
@@ -64,30 +75,40 @@ class AWSKMSAdapter(KMSAdapter):
             raise RuntimeError(
                 f"AWS KMS data key generation failed: {e}") from e
 
-    def wrap_data_key(self, plaintext_key, key_ref):
+    def wrap_data_key(self, plaintext_key, key_ref=None):
         """Wrap data key using AWS KMS encrypt."""
+        # Use configured key_id if no key_ref provided
+        key_id = key_ref or self.key_id
+        if not key_id:
+            raise ValueError("No key_id specified in constructor or method call")
+            
         try:
             response = self.client.encrypt(
-                KeyId=key_ref,
+                KeyId=key_id,
                 Plaintext=plaintext_key
             )
 
-            logger.debug("Wrapped data key using AWS KMS key: %s", key_ref)
+            logger.debug("Wrapped data key using AWS KMS key: %s", key_id)
             return response['CiphertextBlob']
 
         except Exception as e:
             logger.error("Failed to wrap data key with AWS KMS: %s", e)
             raise RuntimeError(f"AWS KMS key wrapping failed: {e}") from e
 
-    def unwrap_data_key(self, wrapped_key, key_ref):
+    def unwrap_data_key(self, wrapped_key, key_ref=None):
         """Unwrap data key using AWS KMS decrypt."""
+        # Use configured key_id if no key_ref provided
+        key_id = key_ref or self.key_id
+        if not key_id:
+            raise ValueError("No key_id specified in constructor or method call")
+            
         try:
             response = self.client.decrypt(
                 CiphertextBlob=wrapped_key,
-                KeyId=key_ref
+                KeyId=key_id
             )
 
-            logger.debug("Unwrapped data key using AWS KMS key: %s", key_ref)
+            logger.debug("Unwrapped data key using AWS KMS key: %s", key_id)
             return response['Plaintext']
 
         except Exception as e:

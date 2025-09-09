@@ -163,13 +163,13 @@ def demonstrate_hyperledger_setup():
     """Demonstrate how to set up Hyperledger Fabric blockchain adapter."""
     print("\n🔧 Hyperledger Fabric Setup Guide...")
     print("=" * 50)
-    
+
     print("📋 Prerequisites:")
     print("  1. Install Hyperledger Fabric Python SDK:")
     print("     pip install fabric-sdk-py")
     print("  2. Set up Hyperledger Fabric network")
     print("  3. Deploy audit chaincode (see examples/hyperledger_chaincode_example.go)")
-    
+
     print("\n⚙️  Configuration Example:")
     config = {
         'network_profile': '/path/to/network.json',
@@ -180,21 +180,21 @@ def demonstrate_hyperledger_setup():
         'user_name': 'Admin',
         'user_secret': 'adminpw'
     }
-    
+
     for key, value in config.items():
         print(f"     {key}: {value}")
-    
+
     print("\n💻 Usage Example:")
     print("     from healthcare_imgsec.blockchain.hyperledger import HyperledgerBlockchainAdapter")
     print("     adapter = HyperledgerBlockchainAdapter(config)")
     print("     result = adapter.submit_digest('a1b2c3...', {'metadata': 'value'})")
-    
+
     print("\n📁 See examples/hyperledger_config_example.json for full configuration")
-    
+
     try:
         from healthcare_imgsec.blockchain.hyperledger import HyperledgerBlockchainAdapter
         print("✅ Hyperledger adapter module available")
-        
+
         # Try to create adapter (will fail without SDK but shows structure)
         try:
             adapter = HyperledgerBlockchainAdapter({})
@@ -204,7 +204,7 @@ def demonstrate_hyperledger_setup():
             print("   Install with: pip install fabric-sdk-py")
         except Exception as e:
             print(f"⚠️  Hyperledger configuration needed: {e}")
-            
+
     except ImportError:
         print("❌ Hyperledger adapter not available")
 

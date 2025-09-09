@@ -78,7 +78,7 @@ def get_kms_client(backend="mock", **kwargs):
 
     elif backend == "vault":
         try:
-            from .vault import VaultKMSAdapter
+            from .vault import VaultAdapter
         except ImportError as e:
             raise ImportError(
                 f"Vault KMS backend requires hvac: pip install hvac. {e}"
@@ -98,11 +98,11 @@ def get_kms_client(backend="mock", **kwargs):
         if not key_name:
             raise RuntimeError("Vault KMS backend requires 'key_name' parameter")
 
-        return VaultKMSAdapter(
-            url=url,
-            token=token,
-            mount=mount,
-            key_name=key_name
+        return VaultAdapter(
+            vault_url=url,
+            vault_token=token,
+            mount_point=mount,
+            key_name=key_name  # Parameter added to VaultAdapter constructor
         )
 
     else:
