@@ -1,6 +1,7 @@
 """
 Tests for the crypto module - envelope encryption functionality.
 """
+
 import os
 import json
 import base64

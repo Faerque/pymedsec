@@ -1,6 +1,7 @@
 """
 Tests for the audit module - tamper-evident logging functionality.
 """
+
 import json
 import hashlib
 import hmac

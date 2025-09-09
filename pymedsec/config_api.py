@@ -4,10 +4,11 @@ Configuration API for policy management.
 Provides utilities for resolving policy references and managing active policies.
 """
 
-import os
 import json
-import yaml
+import os
 from pathlib import Path
+
+import yaml
 
 try:
     from importlib.resources import files

@@ -1,6 +1,7 @@
 """
 Test configuration and fixtures for pymedsec package.
 """
+
 from pymedsec.kms.mock import MockKMSAdapter
 import os
 import tempfile

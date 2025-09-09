@@ -1,6 +1,7 @@
 """
 Tests for the KMS (Key Management Service) adapters.
 """
+
 import base64
 import os
 from unittest.mock import Mock, patch

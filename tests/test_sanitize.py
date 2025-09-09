@@ -1,6 +1,7 @@
 """
 Tests for the sanitization module - PHI removal and metadata sanitization.
 """
+
 import os
 from unittest.mock import Mock, patch
 import pytest
