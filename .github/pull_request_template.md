@@ -1,9 +1,11 @@
 ## Description
+
 Brief description of the changes and their purpose.
 
 Fixes #(issue number)
 
 ## Type of Change
+
 Please delete options that are not relevant.
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
@@ -15,6 +17,7 @@ Please delete options that are not relevant.
 - [ ] Code refactoring
 
 ## Medical Data and Compliance
+
 - [ ] This change affects PHI (Protected Health Information) handling
 - [ ] This change affects DICOM processing
 - [ ] This change affects encryption/decryption
@@ -24,6 +27,7 @@ Please delete options that are not relevant.
 - [ ] No compliance implications
 
 ## Security Review
+
 - [ ] This change affects cryptographic operations
 - [ ] This change affects key management
 - [ ] This change affects data sanitization
@@ -31,6 +35,7 @@ Please delete options that are not relevant.
 - [ ] No security implications
 
 ## Testing
+
 - [ ] Tests added for new functionality
 - [ ] Tests updated for changed functionality
 - [ ] All existing tests pass
@@ -39,6 +44,7 @@ Please delete options that are not relevant.
 - [ ] Manual testing completed
 
 ## Code Quality
+
 - [ ] Self-review of own code completed
 - [ ] Code follows the style guidelines
 - [ ] Linting passes (black, flake8)
@@ -47,6 +53,7 @@ Please delete options that are not relevant.
 - [ ] Comments added for complex logic
 
 ## Documentation
+
 - [ ] README.md updated
 - [ ] API documentation updated
 - [ ] Usage examples updated
@@ -54,18 +61,21 @@ Please delete options that are not relevant.
 - [ ] No documentation changes needed
 
 ## Backwards Compatibility
+
 - [ ] This change is backwards compatible
 - [ ] This change requires a major version bump
 - [ ] Migration guide provided for breaking changes
 - [ ] Deprecation warnings added for removed features
 
 ## Performance Impact
+
 - [ ] Performance impact assessed
 - [ ] Benchmarks run (if applicable)
 - [ ] Memory usage considered
 - [ ] No performance impact
 
 ## Deployment Considerations
+
 - [ ] Environment variables changes documented
 - [ ] Configuration changes documented
 - [ ] Database migration required
@@ -73,15 +83,19 @@ Please delete options that are not relevant.
 - [ ] No deployment considerations
 
 ## Additional Notes
+
 Add any other context about the pull request here.
 
 ### Screenshots
+
 If applicable, add screenshots to help explain your changes (ensure no PHI is visible).
 
 ### Related Issues
+
 List any related issues or dependencies.
 
 ## Reviewer Checklist
+
 For reviewers to complete:
 
 - [ ] Code review completed

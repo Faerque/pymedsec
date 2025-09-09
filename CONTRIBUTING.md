@@ -19,18 +19,21 @@ This project adheres to a code of conduct adapted for healthcare and security co
 
 1. Fork the repository
 2. Clone your fork:
+
    ```bash
    git clone https://github.com/your-username/pymedsec.git
    cd pymedsec
    ```
 
 3. Create a virtual environment:
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 4. Install development dependencies:
+
    ```bash
    pip install -e .[dev,test,docs]
    ```
@@ -52,6 +55,7 @@ This project adheres to a code of conduct adapted for healthcare and security co
 ### Making Changes
 
 1. Create a feature branch:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -59,6 +63,7 @@ This project adheres to a code of conduct adapted for healthcare and security co
 2. Make your changes following the coding standards below
 
 3. Run tests and linting:
+
    ```bash
    pytest tests/
    black pymedsec/ tests/
@@ -66,6 +71,7 @@ This project adheres to a code of conduct adapted for healthcare and security co
    ```
 
 4. Commit your changes:
+
    ```bash
    git commit -m "feat: add your feature description"
    ```
@@ -186,9 +192,11 @@ Please report security vulnerabilities privately. See [SECURITY.md](SECURITY.md)
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
@@ -196,16 +204,19 @@ Brief description of changes
 - [ ] Security improvement
 
 ## Testing
+
 - [ ] Tests added/updated
 - [ ] All tests pass
 - [ ] Security tests included
 
 ## Compliance
+
 - [ ] HIPAA considerations reviewed
 - [ ] GDPR considerations reviewed
 - [ ] Audit trail preserved
 
 ## Checklist
+
 - [ ] Self-review completed
 - [ ] Documentation updated
 - [ ] Changelog updated
@@ -216,6 +227,7 @@ Brief description of changes
 ### Version Numbering
 
 We follow Semantic Versioning (SemVer):
+
 - MAJOR: Breaking changes
 - MINOR: New features (backward compatible)
 - PATCH: Bug fixes (backward compatible)
@@ -240,6 +252,7 @@ We follow Semantic Versioning (SemVer):
 ### Recognition
 
 Contributors are recognized in:
+
 - README.md contributor section
 - Release notes
 - Annual contributor acknowledgments
