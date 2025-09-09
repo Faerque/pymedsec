@@ -307,6 +307,7 @@ print(f"UID Regeneration: {policy.sanitization.dicom.regenerate_uids}")
 ```
 
 **Expected Output:**
+
 ```
 Policy: HIPAA Default Policy
 PHI Removal: True
@@ -325,6 +326,7 @@ print(f"Pseudonymization: {policy.compliance.pseudonymization_required}")
 ```
 
 **Expected Output:**
+
 ```
 Policy: GDPR Compliance Policy
 Data Minimization: True
@@ -343,6 +345,7 @@ print(f"Audit Level: {policy.audit.detail_level}")
 ```
 
 **Expected Output:**
+
 ```
 Policy: GxP Clinical Laboratory Policy
 Validation Required: True
@@ -373,6 +376,7 @@ print(f"UIDs regenerated: {result.uids_regenerated}")
 ```
 
 **Expected Output:**
+
 ```
 Original size: 2,847,392 bytes
 Sanitized size: 2,834,156 bytes
@@ -399,10 +403,11 @@ for tag in result.report.preserved_tags[:5]:
 ```
 
 **Expected Output:**
+
 ```
 === DICOM Sanitization Report ===
 Patient Name: John Doe → REMOVED
-Patient ID: 12345678 → STUDY001_P001  
+Patient ID: 12345678 → STUDY001_P001
 Study Date: 2025-09-09 → 2025-01-01
 Institution: General Hospital → REMOVED
 
@@ -414,6 +419,390 @@ Technical tags preserved:
   (0028,0010) Rows: 512
 ```
 
+### Image Type Specific Examples
+
+PyMedSec supports multiple medical image formats, each with specific metadata handling and sanitization approaches.
+
+#### DICOM (.dcm) - Complete Example
+
+```python
+from pymedsec import scrub_dicom, load_policy
+
+# Input: Original DICOM file
+with open("mri_brain_001.dcm", "rb") as f:
+    original_dicom = f.read()
+
+policy = load_policy("hipaa_default")
+result = scrub_dicom(original_dicom, policy=policy, pseudo_pid="MRI_STUDY_001")
+
+print("=== DICOM Processing ===")
+print(f"Original file size: {len(original_dicom):,} bytes")
+print(f"Image dimensions: {result.metadata['Rows']}x{result.metadata['Columns']}")
+print(f"Modality: {result.metadata['Modality']}")
+print(f"Bits allocated: {result.metadata['BitsAllocated']}")
+```
+
+**Expected Input (DICOM Tags):**
+```
+(0008,0020) Study Date: '20250909'
+(0008,0030) Study Time: '143015.123000'
+(0008,0080) Institution Name: 'General Hospital'
+(0008,0090) Referring Physician: 'Dr. Smith'
+(0010,0010) Patient's Name: 'Doe^John^M'
+(0010,0020) Patient ID: '12345678'
+(0010,0030) Patient's Birth Date: '19851203'
+(0010,0040) Patient's Sex: 'M'
+(0018,0050) Slice Thickness: '5.0'
+(0018,0088) Spacing Between Slices: '5.0'
+(0020,000D) Study Instance UID: '1.2.840.113619.2.5.1762583153...'
+(0028,0010) Rows: 512
+(0028,0011) Columns: 512
+(0028,0100) Bits Allocated: 16
+```
+
+**Expected Output (Sanitized):**
+```
+=== DICOM Processing ===
+Original file size: 2,847,392 bytes
+Image dimensions: 512x512
+Modality: MR
+Bits allocated: 16
+
+=== Sanitization Results ===
+PHI Tags Removed: 23
+Technical Tags Preserved: 156
+UIDs Regenerated: 4
+Date Shift Applied: +67 days
+Pseudo Patient ID: MRI_STUDY_001
+Processing Time: 0.234 seconds
+
+Sanitized Tags:
+(0008,0020) Study Date: '20251115'  # Shifted
+(0008,0030) Study Time: '000000.000000'  # Anonymized
+(0008,0080) Institution Name: [REMOVED]
+(0008,0090) Referring Physician: [REMOVED]
+(0010,0010) Patient's Name: [REMOVED]
+(0010,0020) Patient ID: 'MRI_STUDY_001'
+(0010,0030) Patient's Birth Date: [REMOVED]
+(0010,0040) Patient's Sex: [REMOVED]
+(0018,0050) Slice Thickness: '5.0'  # Preserved
+(0020,000D) Study Instance UID: '2.25.987654321...'  # Regenerated
+```
+
+#### PNG - Photographic/Microscopy Images
+
+```python
+from pymedsec import scrub_image, load_policy
+
+# Input: PNG with EXIF metadata
+with open("microscopy_sample.png", "rb") as f:
+    original_png = f.read()
+
+policy = load_policy("hipaa_default")
+result = scrub_image(original_png, format_hint="png", policy=policy)
+
+print("=== PNG Processing ===")
+print(f"Original file size: {len(original_png):,} bytes")
+print(f"Format: {result.format}")
+print(f"Metadata found: {len(result.original_metadata)} fields")
+```
+
+**Expected Input (PNG EXIF):**
+```
+File: microscopy_sample.png (1,234,567 bytes)
+Image Size: 2048x1536 pixels
+Color Mode: RGB
+
+EXIF Metadata:
+  Make: 'Olympus'
+  Model: 'BX53 Microscope'
+  DateTime: '2025:09:09 14:30:15'
+  Software: 'cellSens Standard 2.3'
+  Artist: 'Lab Technician John Doe'
+  UserComment: 'Patient ID: 12345678, Sample: Biopsy'
+  GPS Info: Present (Hospital Location)
+  Copyright: 'General Hospital Pathology Dept'
+  ImageDescription: 'H&E stain, 40x magnification'
+  XResolution: 300.0 dpi
+  YResolution: 300.0 dpi
+```
+
+**Expected Output (Sanitized PNG):**
+```
+=== PNG Processing ===
+Original file size: 1,234,567 bytes
+Format: PNG
+Metadata found: 12 fields
+
+=== Sanitization Results ===
+EXIF Tags Removed: 8
+Technical Tags Preserved: 4
+PHI References: 3 removed
+Processing Time: 0.089 seconds
+
+Sanitized Metadata:
+  Make: [REMOVED]
+  Model: [REMOVED] 
+  DateTime: [REMOVED]
+  Software: [REMOVED]
+  Artist: [REMOVED]
+  UserComment: [REMOVED]
+  GPS Info: [REMOVED]
+  Copyright: [REMOVED]
+  ImageDescription: [REMOVED]
+  XResolution: 300.0 dpi  # Preserved (technical)
+  YResolution: 300.0 dpi  # Preserved (technical)
+  ColorSpace: sRGB  # Preserved (technical)
+
+Output file size: 1,198,432 bytes (2.9% reduction)
+```
+
+#### JPEG - Clinical Photography
+
+```python
+from pymedsec import scrub_image
+
+# Input: Clinical photograph with extensive metadata
+with open("wound_documentation.jpg", "rb") as f:
+    original_jpeg = f.read()
+
+result = scrub_image(original_jpeg, format_hint="jpeg", policy=policy)
+```
+
+**Expected Input (JPEG EXIF/IPTC):**
+```
+File: wound_documentation.jpg (856,432 bytes)
+Image Size: 4032x3024 pixels
+Quality: 92%
+
+EXIF Metadata:
+  Camera Make: 'Canon'
+  Camera Model: 'EOS R5'
+  DateTime Original: '2025:09:09 14:30:15'
+  GPS Latitude: 40.7128° N
+  GPS Longitude: 74.0060° W
+  Lens Model: 'RF24-105mm F4 L IS USM'
+  ISO Speed: 400
+  Exposure Time: 1/60
+  F-Number: f/5.6
+
+IPTC Metadata:
+  Byline: 'Dr. Sarah Wilson'
+  Caption: 'Post-surgical wound, day 7, patient 12345678'
+  Keywords: 'wound, healing, patient care'
+  Copyright Notice: 'Metropolitan Hospital 2025'
+  City: 'New York'
+  Country: 'USA'
+  
+XMP Metadata:
+  Creator: 'Wound Care Team'
+  Subject: ['medical', 'documentation', 'patient-12345678']
+  Rights: 'Confidential Medical Record'
+```
+
+**Expected Output (Sanitized JPEG):**
+```
+=== JPEG Processing ===
+Original file size: 856,432 bytes
+Format: JPEG
+Metadata found: 18 fields
+
+=== Sanitization Results ===
+EXIF Tags Removed: 8
+IPTC Fields Removed: 6
+XMP Properties Removed: 4
+Technical Tags Preserved: 6
+Processing Time: 0.156 seconds
+
+Sanitized Metadata:
+  Camera Make: [REMOVED]
+  Camera Model: [REMOVED]
+  DateTime Original: [REMOVED]
+  GPS Latitude: [REMOVED]
+  GPS Longitude: [REMOVED]
+  Lens Model: [REMOVED]
+  Byline: [REMOVED]
+  Caption: [REMOVED]
+  Keywords: [REMOVED]
+  Copyright Notice: [REMOVED]
+  Creator: [REMOVED]
+  
+  # Technical metadata preserved:
+  Image Width: 4032 pixels
+  Image Height: 3024 pixels
+  Color Space: sRGB
+  Orientation: 1 (normal)
+  Resolution: 72 dpi
+  Compression: JPEG (Quality 92%)
+
+Output file size: 823,145 bytes (3.9% reduction)
+```
+
+#### TIFF - High-Resolution Pathology
+
+```python
+from pymedsec import scrub_image
+
+# Input: High-resolution pathology slide
+with open("histology_slide_001.tiff", "rb") as f:
+    original_tiff = f.read()
+
+result = scrub_image(original_tiff, format_hint="tiff", policy=policy, preserve_technical=True)
+```
+
+**Expected Input (TIFF Tags):**
+```
+File: histology_slide_001.tiff (45,678,234 bytes)
+Image Size: 32768x24576 pixels (804 megapixels)
+Bit Depth: 24-bit RGB
+Compression: LZW
+
+TIFF Tags:
+  Software: 'Aperio ImageScope v12.4.6'
+  DateTime: '2025:09:09 14:30:15'
+  Artist: 'Pathologist Dr. Jane Smith'
+  Copyright: 'Metro Pathology Lab'
+  ImageDescription: 'Patient: John Doe, Case: 2025-001234, H&E 20x'
+  Make: 'Aperio'
+  Model: 'ScanScope AT2'
+  DocumentName: 'slide_patient_12345678.svs'
+  HostComputer: 'PATHOLOGY-WS-001'
+  
+  # Aperio-specific tags:
+  Aperio.Filename: 'patient_12345678_slide_001'
+  Aperio.Date: '09/09/2025'
+  Aperio.Time: '14:30:15'
+  Aperio.User: 'jsmith'
+  Aperio.AppMag: '20'
+  Aperio.StripeWidth: '2048'
+  Aperio.ScanScope ID: 'SS1234'
+  
+  # Technical preservation tags:
+  XResolution: 0.25 μm/pixel
+  YResolution: 0.25 μm/pixel
+  ResolutionUnit: Micrometer
+  PlanarConfiguration: Chunky
+  PhotometricInterpretation: RGB
+```
+
+**Expected Output (Sanitized TIFF):**
+```
+=== TIFF Processing ===
+Original file size: 45,678,234 bytes
+Format: TIFF
+Image dimensions: 32768x24576 pixels
+Metadata found: 23 fields
+
+=== Sanitization Results ===
+Standard TIFF Tags Removed: 8
+Aperio-Specific Tags Removed: 7
+Technical Tags Preserved: 8
+Processing Time: 2.456 seconds
+
+Sanitized Metadata:
+  Software: [REMOVED]
+  DateTime: [REMOVED]
+  Artist: [REMOVED]
+  Copyright: [REMOVED]
+  ImageDescription: [REMOVED]
+  Make: [REMOVED]
+  Model: [REMOVED]
+  DocumentName: [REMOVED]
+  HostComputer: [REMOVED]
+  
+  # Aperio tags removed:
+  Aperio.Filename: [REMOVED]
+  Aperio.Date: [REMOVED]
+  Aperio.Time: [REMOVED]
+  Aperio.User: [REMOVED]
+  Aperio.ScanScope ID: [REMOVED]
+  
+  # Technical metadata preserved:
+  Image Width: 32768 pixels
+  Image Height: 24576 pixels
+  Bits Per Sample: 8, 8, 8
+  Compression: LZW
+  XResolution: 0.25 μm/pixel  # Critical for measurements
+  YResolution: 0.25 μm/pixel  # Critical for measurements
+  ResolutionUnit: Micrometer
+  PhotometricInterpretation: RGB
+  Aperio.AppMag: '20'  # Magnification preserved
+
+Output file size: 45,456,123 bytes (0.5% reduction)
+```
+
+#### Multi-format Batch Processing
+
+```python
+from pymedsec import scrub_image
+from pathlib import Path
+
+# Process multiple image types
+image_dir = Path("./medical_images/")
+results = {}
+
+for image_file in image_dir.glob("*"):
+    if image_file.suffix.lower() in ['.dcm', '.png', '.jpg', '.jpeg', '.tiff', '.tif']:
+        with open(image_file, "rb") as f:
+            data = f.read()
+        
+        # Auto-detect format or use extension hint
+        format_hint = image_file.suffix.lower().replace('.', '')
+        if format_hint == 'dcm':
+            result = scrub_dicom(data, policy=policy, pseudo_pid=f"BATCH_{image_file.stem}")
+        else:
+            result = scrub_image(data, format_hint=format_hint, policy=policy)
+        
+        results[image_file.name] = {
+            'original_size': len(data),
+            'sanitized_size': len(result.sanitized_data),
+            'metadata_removed': len(result.removed_metadata),
+            'format': result.format
+        }
+
+# Display batch results
+for filename, stats in results.items():
+    print(f"{filename}:")
+    print(f"  Format: {stats['format']}")
+    print(f"  Size: {stats['original_size']:,} → {stats['sanitized_size']:,} bytes")
+    print(f"  Metadata removed: {stats['metadata_removed']} fields")
+    print(f"  Reduction: {((stats['original_size'] - stats['sanitized_size']) / stats['original_size'] * 100):.1f}%")
+```
+
+**Expected Batch Output:**
+```
+mri_brain_001.dcm:
+  Format: DICOM
+  Size: 2,847,392 → 2,834,156 bytes
+  Metadata removed: 23 fields
+  Reduction: 0.5%
+
+microscopy_sample.png:
+  Format: PNG
+  Size: 1,234,567 → 1,198,432 bytes
+  Metadata removed: 8 fields
+  Reduction: 2.9%
+
+wound_documentation.jpg:
+  Format: JPEG
+  Size: 856,432 → 823,145 bytes
+  Metadata removed: 18 fields
+  Reduction: 3.9%
+
+histology_slide_001.tiff:
+  Format: TIFF
+  Size: 45,678,234 → 45,456,123 bytes
+  Metadata removed: 15 fields
+  Reduction: 0.5%
+
+=== Batch Summary ===
+Total files processed: 4
+Total original size: 50,616,625 bytes (48.3 MB)
+Total sanitized size: 50,311,856 bytes (48.0 MB)
+Total metadata fields removed: 64
+Average processing time: 0.734 seconds/file
+```
+
 ### Encryption & KMS Examples
 
 #### AWS KMS Encryption
@@ -422,7 +811,7 @@ Technical tags preserved:
 from pymedsec import get_kms_client, encrypt_blob
 
 # Setup AWS KMS
-kms = get_kms_client("aws", 
+kms = get_kms_client("aws",
                      key_id="alias/medical-images-prod",
                      region_name="us-east-1")
 
@@ -440,6 +829,7 @@ print(f"Created: {encrypted_pkg.header.created_at}")
 ```
 
 **Expected Output:**
+
 ```
 Encryption Algorithm: AES-256-GCM
 KMS Key: arn:aws:kms:us-east-1:123456789012:alias/medical-images-prod
@@ -464,6 +854,7 @@ print(f"Wrapped Key Size: {len(encrypted_pkg.crypto.wrapped_dek)} bytes")
 ```
 
 **Expected Output:**
+
 ```
 Vault Path: medical/keys/imaging
 Vault Version: v3
@@ -498,6 +889,7 @@ print(f"Value range: [{tensor.min():.3f}, {tensor.max():.3f}]")
 ```
 
 **Expected Output:**
+
 ```
 Dataset size: 1,247 images
 Memory usage: 234.5 MB
@@ -519,19 +911,20 @@ from pymedsec.audit import AuditLogger
 logger = AuditLogger(audit_path="/var/log/pymedsec/audit.jsonl")
 
 # Log operations
-logger.log_operation("SANITIZE", 
+logger.log_operation("SANITIZE",
                     outcome="success",
                     file_hash="sha256:abc123...",
                     tags_removed=23,
                     policy="hipaa_default")
 
 logger.log_operation("ENCRYPT",
-                    outcome="success", 
+                    outcome="success",
                     kms_key="alias/medical-images",
                     algorithm="AES-256-GCM")
 ```
 
 **Expected Audit Log Entries:**
+
 ```jsonl
 {"timestamp": "2025-09-09T14:30:15.123Z", "actor": "radiologist@hospital.com", "operation": "SANITIZE", "outcome": "success", "file_hash": "sha256:abc123...", "tags_removed": 23, "policy": "hipaa_default", "signature": "hmac_sha256:def456..."}
 {"timestamp": "2025-09-09T14:30:16.456Z", "actor": "radiologist@hospital.com", "operation": "ENCRYPT", "outcome": "success", "kms_key": "alias/medical-images", "algorithm": "AES-256-GCM", "signature": "hmac_sha256:ghi789..."}
@@ -557,6 +950,7 @@ print(f"Blockchain txn: {logger.last_blockchain_txn}")
 ```
 
 **Expected Output:**
+
 ```
 Last anchor hash: sha256:blockchain_anchor_abc123...
 Blockchain txn: 0x1234567890abcdef...
@@ -579,6 +973,7 @@ pymedsec sanitize-cmd \
 ```
 
 **Expected CLI Output:**
+
 ```
 🏥 PyMedSec Medical Image Sanitizer
 =====================================
@@ -589,7 +984,7 @@ pymedsec sanitize-cmd \
 📊 Sanitization Progress:
   ✅ Loaded DICOM dataset (512x512x16bit)
   ✅ Removed 23 PHI tags
-  ✅ Regenerated 4 UIDs  
+  ✅ Regenerated 4 UIDs
   ✅ Preserved 156 technical tags
   ✅ Applied date shifting (+45 days)
   ⚠️  Detected burned-in annotation (handled)
@@ -615,6 +1010,7 @@ pymedsec encrypt \
 ```
 
 **Expected CLI Output:**
+
 ```
 🔐 PyMedSec Medical Image Encryptor
 ====================================
@@ -640,17 +1036,17 @@ pymedsec encrypt \
 
 ### Policy Comparison Table
 
-| Feature | HIPAA Default | GDPR Default | GxP Default | Custom Lab |
-|---------|---------------|--------------|-------------|------------|
-| **PHI Removal** | ✅ Complete | ✅ Complete | ✅ Complete | ⚠️ Selective |
-| **UID Regeneration** | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No |
-| **Date Shifting** | ✅ ±90 days | ✅ ±90 days | ❌ Preserve | ✅ ±30 days |
-| **Technical Tags** | ✅ Preserve | ✅ Preserve | ✅ Preserve | ✅ Preserve |
-| **Audit Retention** | 7 years | 6 years | 15 years | 2 years |
-| **Encryption** | AES-256-GCM | AES-256-GCM | AES-256-GCM | AES-256-GCM |
-| **Blockchain** | Optional | Optional | Required | Disabled |
-| **OCR Redaction** | Strict | Moderate | Strict | Disabled |
-| **Validation** | Standard | Standard | Enhanced | Minimal |
+| Feature              | HIPAA Default | GDPR Default | GxP Default | Custom Lab   |
+| -------------------- | ------------- | ------------ | ----------- | ------------ |
+| **PHI Removal**      | ✅ Complete   | ✅ Complete  | ✅ Complete | ⚠️ Selective |
+| **UID Regeneration** | ✅ Yes        | ✅ Yes       | ✅ Yes      | ❌ No        |
+| **Date Shifting**    | ✅ ±90 days   | ✅ ±90 days  | ❌ Preserve | ✅ ±30 days  |
+| **Technical Tags**   | ✅ Preserve   | ✅ Preserve  | ✅ Preserve | ✅ Preserve  |
+| **Audit Retention**  | 7 years       | 6 years      | 15 years    | 2 years      |
+| **Encryption**       | AES-256-GCM   | AES-256-GCM  | AES-256-GCM | AES-256-GCM  |
+| **Blockchain**       | Optional      | Optional     | Required    | Disabled     |
+| **OCR Redaction**    | Strict        | Moderate     | Strict      | Disabled     |
+| **Validation**       | Standard      | Standard     | Enhanced    | Minimal      |
 
 ### Error Handling Examples
 
@@ -665,6 +1061,7 @@ except PolicyNotFoundError as e:
 ```
 
 **Expected Output:**
+
 ```
 Error: Policy 'invalid_policy' not found
 Available policies: ['hipaa_default', 'gdpr_default', 'gxp_default']
@@ -682,6 +1079,7 @@ except KMSAccessError as e:
 ```
 
 **Expected Output:**
+
 ```
 KMS Error: Access denied to key 'invalid-key'
 Check IAM permissions and key existence
