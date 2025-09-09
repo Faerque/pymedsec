@@ -43,7 +43,8 @@ class HyperledgerBlockchainAdapter(BlockchainAdapter):
 
         # Initialize client
         try:
-            self.client = Hyperledger_Fabric_Client(net_profile=self.network_profile)  # type: ignore
+            self.client = Hyperledger_Fabric_Client(
+                net_profile=self.network_profile)  # type: ignore
 
             # Get organization and user
             self.org = self.client.get_organization(self.org_name)

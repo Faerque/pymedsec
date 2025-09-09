@@ -28,15 +28,16 @@ class AWSKMSAdapter(KMSAdapter):
         if self._client is None:
             try:
                 import boto3
-                
+
                 # Create session with profile if specified
                 if self.profile_name:
                     session = boto3.Session(profile_name=self.profile_name)
                     self._client = session.client('kms', region_name=self.region_name)
                 else:
                     self._client = boto3.client('kms', region_name=self.region_name)
-                    
-                logger.debug("Initialized AWS KMS client for region: %s", self.region_name)
+
+                logger.debug("Initialized AWS KMS client for region: %s",
+                             self.region_name)
             except ImportError as e:
                 raise RuntimeError(
                     "boto3 library required for AWS KMS adapter") from e
@@ -52,7 +53,7 @@ class AWSKMSAdapter(KMSAdapter):
         key_id = key_ref or self.key_id
         if not key_id:
             raise ValueError("No key_id specified in constructor or method call")
-            
+
         try:
             # Convert key_spec to AWS format
             if key_spec == '256':
@@ -81,7 +82,7 @@ class AWSKMSAdapter(KMSAdapter):
         key_id = key_ref or self.key_id
         if not key_id:
             raise ValueError("No key_id specified in constructor or method call")
-            
+
         try:
             response = self.client.encrypt(
                 KeyId=key_id,
@@ -101,7 +102,7 @@ class AWSKMSAdapter(KMSAdapter):
         key_id = key_ref or self.key_id
         if not key_id:
             raise ValueError("No key_id specified in constructor or method call")
-            
+
         try:
             response = self.client.decrypt(
                 CiphertextBlob=wrapped_key,

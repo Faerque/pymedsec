@@ -49,7 +49,7 @@ def resolve_policy_ref(policy_ref):
     # Otherwise, treat as a bundled policy name
     try:
         # Load from packaged policies directory
-        policies_root = files("healthcare_imgsec") / "policies"
+        policies_root = files("pymedsec") / "policies"
         policy_file = policies_root / f"{policy_ref}.yaml"
 
         if hasattr(policy_file, "read_text"):
@@ -94,10 +94,10 @@ def load_policy_dict(policy_ref):
     policy_path = resolve_policy_ref(policy_ref)
 
     try:
-        if policy_path.startswith("healthcare_imgsec"):
+        if policy_path.startswith("pymedsec"):
             # Handle packaged resource
             try:
-                policies_root = files("healthcare_imgsec") / "policies"
+                policies_root = files("pymedsec") / "policies"
                 policy_name = os.path.basename(policy_path)
                 policy_file = policies_root / policy_name
                 content = policy_file.read_text()
@@ -168,7 +168,7 @@ def list_policies():
         >>> print(policies)  # ['hipaa_default', 'gdpr_default', 'gxplab_default']
     """
     try:
-        policies_root = files("healthcare_imgsec") / "policies"
+        policies_root = files("pymedsec") / "policies"
         policy_files = []
 
         if hasattr(policies_root, "iterdir"):

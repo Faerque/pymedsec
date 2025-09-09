@@ -48,7 +48,7 @@ except ImportError:
     HAS_PIL = False
 
 # Import the public API
-from healthcare_imgsec.public_api import (
+from pymedsec.public_api import (
     load_policy, set_active_policy, get_active_policy, list_policies,
     scrub_dicom, scrub_image, encrypt_blob, decrypt_blob, decrypt_to_tensor,
     get_kms_client, SecureImageDataset
@@ -223,7 +223,7 @@ class TestDataProcessing(unittest.TestCase):
         dicom_bytes = buffer.getvalue()
 
         # Mock the sanitize function to avoid config dependency
-        with patch('healthcare_imgsec.sanitize.sanitize_dicom') as mock_sanitize:
+        with patch('pymedsec.sanitize.sanitize_dicom') as mock_sanitize:
             # Create a mock sanitized dataset
             sanitized_ds = ds.copy()
             del sanitized_ds.PatientName
@@ -308,7 +308,7 @@ class TestDataProcessing(unittest.TestCase):
         kms = get_kms_client("mock")
         pkg = {"encrypted": "data"}
 
-        with patch('healthcare_imgsec.public_api.decrypt_blob') as mock_decrypt:
+        with patch('pymedsec.public_api.decrypt_blob') as mock_decrypt:
             mock_decrypt.return_value = test_data
 
             tensor = decrypt_to_tensor(pkg, kms_client=kms)
@@ -325,7 +325,7 @@ class TestDataProcessing(unittest.TestCase):
         kms = get_kms_client("mock")
         pkg = {"encrypted": "data"}
 
-        with patch('healthcare_imgsec.public_api.decrypt_blob') as mock_decrypt:
+        with patch('pymedsec.public_api.decrypt_blob') as mock_decrypt:
             mock_decrypt.return_value = dicom_data
 
             with patch('pydicom.dcmread') as mock_dcmread:
@@ -437,7 +437,7 @@ class TestSecureImageDataset(unittest.TestCase):
         dataset = SecureImageDataset(str(pkg_dir), kms_client=kms)
 
         # Mock the decrypt_to_tensor function
-        with patch('healthcare_imgsec.public_api.decrypt_to_tensor') as mock_decrypt:
+        with patch('pymedsec.public_api.decrypt_to_tensor') as mock_decrypt:
             mock_decrypt.return_value = np.array([[1, 2], [3, 4]])
 
             # Test iteration
@@ -470,8 +470,8 @@ class TestErrorHandling(unittest.TestCase):
         kms = get_kms_client("mock")
 
         # Mock the internal functions
-        with patch('healthcare_imgsec.sanitize.sanitize_dicom_bytes') as mock_sanitize, \
-                patch('healthcare_imgsec.public_api.load_policy') as mock_load:
+        with patch('pymedsec.sanitize.sanitize_dicom_bytes') as mock_sanitize, \
+                patch('pymedsec.public_api.load_policy') as mock_load:
 
             mock_sanitize.return_value = b"sanitized"
             mock_load.return_value = {"test": "policy"}
@@ -484,8 +484,8 @@ class TestErrorHandling(unittest.TestCase):
         """Test that crypto functions create mock KMS when kms_client=None."""
         data = b"test data"
 
-        with patch('healthcare_imgsec.crypto.encrypt_data') as mock_encrypt, \
-                patch('healthcare_imgsec.public_api.get_kms_client') as mock_get_kms:
+        with patch('pymedsec.crypto.encrypt_data') as mock_encrypt, \
+                patch('pymedsec.public_api.get_kms_client') as mock_get_kms:
 
             mock_package = MagicMock()
             mock_package.to_dict.return_value = {"encrypted": "data"}
@@ -504,14 +504,14 @@ class TestErrorHandling(unittest.TestCase):
         kms = get_kms_client("mock")
 
         # Test encryption error
-        with patch('healthcare_imgsec.crypto.encrypt_data') as mock_encrypt:
+        with patch('pymedsec.crypto.encrypt_data') as mock_encrypt:
             mock_encrypt.side_effect = Exception("Crypto error")
 
             with pytest.raises(RuntimeError, match="Encryption failed: Crypto error"):
                 encrypt_blob(b"data", kms_client=kms)
 
         # Test decryption error
-        with patch('healthcare_imgsec.crypto.decrypt_data') as mock_decrypt:
+        with patch('pymedsec.crypto.decrypt_data') as mock_decrypt:
             mock_decrypt.side_effect = Exception("Decrypt error")
 
             with pytest.raises(RuntimeError, match="Decryption failed: Decrypt error"):

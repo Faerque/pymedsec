@@ -241,7 +241,7 @@ compliance:
 ## Programming Interface
 
 ```python
-from healthcare_imgsec import config, intake, crypto, sanitize
+from pymedsec import config, intake, crypto, sanitize
 
 # Load configuration
 cfg = config.load_config()

@@ -1,5 +1,5 @@
 """
-Blockchain audit anchoring module for healthcare_imgsec.
+Blockchain audit anchoring module for pymedsec.
 
 This module provides pluggable blockchain adapters for anchoring audit log
 digests to various blockchain networks without exposing PHI.

@@ -5,10 +5,10 @@ import base64
 from unittest.mock import Mock, patch
 import pytest
 
-from healthcare_imgsec.kms.base import KMSAdapter
-from healthcare_imgsec.kms.mock import MockKMSAdapter
-from healthcare_imgsec.kms.aws_kms import AWSKMSAdapter
-from healthcare_imgsec.kms.vault import VaultKMSAdapter
+from pymedsec.kms.base import KMSAdapter
+from pymedsec.kms.mock import MockKMSAdapter
+from pymedsec.kms.aws_kms import AWSKMSAdapter
+from pymedsec.kms.vault import VaultAdapter
 
 
 class TestKMSAdapterBase:
@@ -80,7 +80,7 @@ class TestMockKMSAdapter:
         adapter = MockKMSAdapter()
 
         # Use deterministic mode for testing
-        with patch('healthcare_imgsec.kms.mock.os.urandom') as mock_random:
+        with patch('pymedsec.kms.mock.os.urandom') as mock_random:
             mock_random.return_value = b'deterministic_key_32_bytes___'
 
             key1 = adapter.generate_data_key(
@@ -129,7 +129,7 @@ class TestAWSKMSAdapter:
             'secret_access_key': 'test_secret_key'
         }
 
-        with patch('healthcare_imgsec.kms.aws_kms.boto3') as mock_boto3:
+        with patch('pymedsec.kms.aws_kms.boto3') as mock_boto3:
             mock_client = Mock()
             mock_boto3.client.return_value = mock_client
 
@@ -147,7 +147,7 @@ class TestAWSKMSAdapter:
         """Test successful data key generation with AWS KMS."""
         config = {'region': 'us-east-1'}
 
-        with patch('healthcare_imgsec.kms.aws_kms.boto3') as mock_boto3:
+        with patch('pymedsec.kms.aws_kms.boto3') as mock_boto3:
             mock_client = Mock()
             mock_client.generate_data_key.return_value = {
                 'Plaintext': b'32_byte_plaintext_key_data_here',
@@ -168,7 +168,7 @@ class TestAWSKMSAdapter:
         """Test successful decryption with AWS KMS."""
         config = {'region': 'us-east-1'}
 
-        with patch('healthcare_imgsec.kms.aws_kms.boto3') as mock_boto3:
+        with patch('pymedsec.kms.aws_kms.boto3') as mock_boto3:
             mock_client = Mock()
             mock_client.decrypt.return_value = {
                 'Plaintext': b'decrypted_key_data_32_bytes___'
@@ -184,7 +184,7 @@ class TestAWSKMSAdapter:
         """Test handling of KMS exceptions."""
         config = {'region': 'us-east-1'}
 
-        with patch('healthcare_imgsec.kms.aws_kms.boto3') as mock_boto3:
+        with patch('pymedsec.kms.aws_kms.boto3') as mock_boto3:
             mock_client = Mock()
             mock_client.generate_data_key.side_effect = Exception(
                 "KMS service error")
@@ -202,7 +202,7 @@ class TestAWSKMSAdapter:
         """Test encryption context support in AWS KMS."""
         config = {'region': 'us-east-1'}
 
-        with patch('healthcare_imgsec.kms.aws_kms.boto3') as mock_boto3:
+        with patch('pymedsec.kms.aws_kms.boto3') as mock_boto3:
             mock_client = Mock()
             mock_client.generate_data_key.return_value = {
                 'Plaintext': b'test_key_data',
@@ -236,7 +236,7 @@ class TestVaultKMSAdapter:
             'mount_point': 'transit'
         }
 
-        with patch('healthcare_imgsec.kms.vault.hvac') as mock_hvac:
+        with patch('pymedsec.kms.vault.hvac') as mock_hvac:
             mock_client = Mock()
             mock_hvac.Client.return_value = mock_client
             mock_client.is_authenticated.return_value = True
@@ -257,7 +257,7 @@ class TestVaultKMSAdapter:
             'mount_point': 'transit'
         }
 
-        with patch('healthcare_imgsec.kms.vault.hvac') as mock_hvac:
+        with patch('pymedsec.kms.vault.hvac') as mock_hvac:
             mock_client = Mock()
             mock_client.is_authenticated.return_value = True
             mock_client.secrets.transit.generate_data_key.return_value = {
@@ -283,7 +283,7 @@ class TestVaultKMSAdapter:
             'mount_point': 'transit'
         }
 
-        with patch('healthcare_imgsec.kms.vault.hvac') as mock_hvac:
+        with patch('pymedsec.kms.vault.hvac') as mock_hvac:
             mock_client = Mock()
             mock_client.is_authenticated.return_value = True
             mock_client.secrets.transit.decrypt_data.return_value = {
@@ -306,7 +306,7 @@ class TestVaultKMSAdapter:
             'mount_point': 'transit'
         }
 
-        with patch('healthcare_imgsec.kms.vault.hvac') as mock_hvac:
+        with patch('pymedsec.kms.vault.hvac') as mock_hvac:
             mock_client = Mock()
             mock_client.is_authenticated.return_value = False
             mock_hvac.Client.return_value = mock_client
@@ -324,7 +324,7 @@ class TestVaultKMSAdapter:
             'mount_point': 'transit'
         }
 
-        with patch('healthcare_imgsec.kms.vault.hvac') as mock_hvac:
+        with patch('pymedsec.kms.vault.hvac') as mock_hvac:
             mock_hvac.Client.side_effect = Exception("Connection refused")
 
             with pytest.raises(Exception) as exc_info:
@@ -343,7 +343,7 @@ class TestKMSAdapterFactory:
             'config': {}
         }
 
-        from healthcare_imgsec.kms import create_kms_adapter
+        from pymedsec.kms import create_kms_adapter
         adapter = create_kms_adapter(config)
 
         assert isinstance(adapter, MockKMSAdapter)
@@ -359,8 +359,8 @@ class TestKMSAdapterFactory:
             }
         }
 
-        with patch('healthcare_imgsec.kms.aws_kms.boto3'):
-            from healthcare_imgsec.kms import create_kms_adapter
+        with patch('pymedsec.kms.aws_kms.boto3'):
+            from pymedsec.kms import create_kms_adapter
             adapter = create_kms_adapter(config)
 
             assert isinstance(adapter, AWSKMSAdapter)
@@ -376,12 +376,12 @@ class TestKMSAdapterFactory:
             }
         }
 
-        with patch('healthcare_imgsec.kms.vault.hvac') as mock_hvac:
+        with patch('pymedsec.kms.vault.hvac') as mock_hvac:
             mock_client = Mock()
             mock_client.is_authenticated.return_value = True
             mock_hvac.Client.return_value = mock_client
 
-            from healthcare_imgsec.kms import create_kms_adapter
+            from pymedsec.kms import create_kms_adapter
             adapter = create_kms_adapter(config)
 
             assert isinstance(adapter, VaultKMSAdapter)
@@ -393,7 +393,7 @@ class TestKMSAdapterFactory:
             'config': {}
         }
 
-        from healthcare_imgsec.kms import create_kms_adapter
+        from pymedsec.kms import create_kms_adapter
 
         with pytest.raises(ValueError) as exc_info:
             create_kms_adapter(config)

@@ -18,20 +18,20 @@ dev-install:
 	$(PIP) install -e ".[dev,aws,vault,ocr]"
 
 test:
-	$(PYTHON) -m pytest tests/ -v --tb=short --cov=healthcare_imgsec --cov-report=term-missing
+	$(PYTHON) -m pytest tests/ -v --tb=short --cov=pymedsec --cov-report=term-missing
 
 test-quick:
 	$(PYTHON) -m pytest tests/ -x -v
 
 lint:
-	$(PYTHON) -m flake8 healthcare_imgsec/ tests/ --max-line-length=88 --extend-ignore=E203,W503
-	$(PYTHON) -m mypy healthcare_imgsec/ --ignore-missing-imports --no-strict-optional
+	$(PYTHON) -m flake8 pymedsec/ tests/ --max-line-length=88 --extend-ignore=E203,W503
+	$(PYTHON) -m mypy pymedsec/ --ignore-missing-imports --no-strict-optional
 
 fmt:
-	$(PYTHON) -m black healthcare_imgsec/ tests/ --line-length=88
+	$(PYTHON) -m black pymedsec/ tests/ --line-length=88
 
 check-fmt:
-	$(PYTHON) -m black healthcare_imgsec/ tests/ --check --line-length=88
+	$(PYTHON) -m black pymedsec/ tests/ --check --line-length=88
 
 clean:
 	find . -type f -name "*.pyc" -delete
@@ -78,7 +78,7 @@ ci-test: dev-install lint test
 
 # Generate test coverage report
 coverage:
-	$(PYTHON) -m pytest tests/ --cov=healthcare_imgsec --cov-report=html
+	$(PYTHON) -m pytest tests/ --cov=pymedsec --cov-report=html
 	@echo "Coverage report generated in htmlcov/"
 
 # Performance testing

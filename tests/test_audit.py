@@ -8,8 +8,8 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 import pytest
 
-from healthcare_imgsec.audit import AuditLogger, verify_audit_chain, generate_audit_signature
-from healthcare_imgsec.config import SecurityConfig
+from pymedsec.audit import AuditLogger
+from pymedsec.config import SecurityConfig
 
 
 class TestAuditLogger:

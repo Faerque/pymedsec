@@ -1,6 +1,6 @@
-# Publishing Guide for imgsec
+# Publishing Guide for PyMedSec
 
-This document provides step-by-step instructions for building and publishing the imgsec package to PyPI.
+This document provides step-by-step instructions for building and publishing the PyMedSec package to PyPI.
 
 ## Prerequisites
 
@@ -19,8 +19,8 @@ Before publishing, ensure you have:
 - [ ] Version number updated in `pyproject.toml` and `setup.cfg`
 - [ ] CHANGELOG.md updated with release notes
 - [ ] All tests passing: `python -m pytest`
-- [ ] Code formatted: `python -m black healthcare_imgsec/`
-- [ ] Linting clean: `python -m flake8 healthcare_imgsec/`
+- [ ] Code formatted: `python -m black pymedsec/`
+- [ ] Linting clean: `python -m flake8 pymedsec/`
 - [ ] Documentation reviewed and up-to-date
 - [ ] Security scan completed
 
@@ -42,8 +42,8 @@ python -m build
 # Verify build outputs
 ls -la dist/
 # Should show:
-# imgsec-0.1.0.tar.gz
-# imgsec-0.1.0-py3-none-any.whl
+# pymedsec-0.1.0.tar.gz
+# pymedsec-0.1.0-py3-none-any.whl
 ```
 
 ### 3. Validate the Build
@@ -53,11 +53,11 @@ ls -la dist/
 python -m twine check dist/*
 
 # Test installation locally
-pip install dist/imgsec-0.1.0-py3-none-any.whl
+pip install dist/pymedsec-0.1.0-py3-none-any.whl
 
 # Quick smoke test
-imgsec --help
-python -c "import healthcare_imgsec; print('Import successful')"
+pymedsec --help
+python -c "import pymedsec; print('Import successful')"
 ```
 
 ## Publishing to TestPyPI (Recommended First)
@@ -93,7 +93,7 @@ chmod 600 ~/.pypirc
 python -m twine upload --repository testpypi dist/*
 
 # Verify upload
-# Visit: https://test.pypi.org/project/imgsec/
+# Visit: https://test.pypi.org/project/pymedsec/
 ```
 
 ### 3. Test Installation from TestPyPI
@@ -106,13 +106,13 @@ source test_env/bin/activate  # On Windows: test_env\Scripts\activate
 # Install from TestPyPI
 pip install --index-url https://test.pypi.org/simple/ \
     --extra-index-url https://pypi.org/simple/ \
-    imgsec
+    pymedsec
 
 # Test functionality
-imgsec --help
+pymedsec --help
 python -c "
-import healthcare_imgsec
-from healthcare_imgsec.config import SecurityConfig
+import pymedsec
+from pymedsec.config import SecurityConfig
 print('TestPyPI installation successful')
 "
 
@@ -141,23 +141,23 @@ python -m pytest -v
 python -m twine upload dist/*
 
 # Monitor upload progress
-# Visit: https://pypi.org/project/imgsec/
+# Visit: https://pypi.org/project/pymedsec/
 ```
 
 ### 3. Verify Production Installation
 
 ```bash
 # Test installation from PyPI
-pip install imgsec
+pip install pymedsec
 
 # Verify CLI works
-imgsec --version
-imgsec --help
+pymedsec --version
+pymedsec --help
 
 # Test basic import
 python -c "
-import healthcare_imgsec
-from healthcare_imgsec import sanitize, crypto, audit
+import pymedsec
+from pymedsec import sanitize, crypto, audit
 print('Production PyPI installation successful')
 "
 ```
@@ -193,7 +193,7 @@ git push origin v0.1.0
 ```bash
 # Check MANIFEST.in includes all necessary files
 python -m build --sdist
-tar -tzf dist/imgsec-0.1.0.tar.gz | head -20
+tar -tzf dist/pymedsec-0.1.0.tar.gz | head -20
 ```
 
 **Import errors:**
@@ -203,7 +203,7 @@ tar -tzf dist/imgsec-0.1.0.tar.gz | head -20
 python -c "
 import sys
 sys.path.insert(0, '.')
-import healthcare_imgsec
+import pymedsec
 print('Local import successful')
 "
 ```
@@ -272,17 +272,17 @@ python -m twine upload --repository pypi dist/*
 
 ```bash
 # Verify package contents before upload
-python -m zipfile -l dist/imgsec-0.1.0-py3-none-any.whl
+python -m zipfile -l dist/pymedsec-0.1.0-py3-none-any.whl
 
 # Check for sensitive files
-tar -tzf dist/imgsec-0.1.0.tar.gz | grep -E "\.(key|pem|env|secret)"
+tar -tzf dist/pymedsec-0.1.0.tar.gz | grep -E "\.(key|pem|env|secret)"
 ```
 
 ### Release Signing
 
 ```bash
 # Sign release with GPG (optional but recommended)
-gpg --detach-sign -a dist/imgsec-0.1.0.tar.gz
+gpg --detach-sign -a dist/pymedsec-0.1.0.tar.gz
 python -m twine upload dist/* --sign
 ```
 

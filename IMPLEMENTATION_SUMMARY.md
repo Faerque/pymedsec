@@ -75,7 +75,7 @@ Successfully implemented a clean, minimal public API for the PyMedSec healthcare
 #### Basic Workflow
 
 ```python
-from healthcare_imgsec import load_policy, get_kms_client, encrypt_blob, decrypt_blob
+from pymedsec import load_policy, get_kms_client, encrypt_blob, decrypt_blob
 
 policy = load_policy('hipaa_default')
 kms = get_kms_client('mock')
@@ -86,7 +86,7 @@ decrypted = decrypt_blob(encrypted, kms_client=kms)
 #### DICOM Processing
 
 ```python
-from healthcare_imgsec import scrub_dicom, encrypt_blob
+from pymedsec import scrub_dicom, encrypt_blob
 
 with open('scan.dcm', 'rb') as f:
     dicom_data = f.read()
@@ -98,7 +98,7 @@ encrypted_package = encrypt_blob(clean_dicom, kms_client=kms)
 #### ML Pipeline
 
 ```python
-from healthcare_imgsec import SecureImageDataset, decrypt_to_tensor
+from pymedsec import SecureImageDataset, decrypt_to_tensor
 
 dataset = SecureImageDataset('/path/to/encrypted/images', kms_client=kms)
 for encrypted_package in dataset:
@@ -119,15 +119,15 @@ All core functions have been tested and demonstrated working:
 
 #### New Files
 
-- `healthcare_imgsec/public_api.py` - Main public API implementation
-- `healthcare_imgsec/config_api.py` - Policy management without config dependency
+- `pymedsec/public_api.py` - Main public API implementation
+- `pymedsec/config_api.py` - Policy management without config dependency
 - `tests/test_public_api.py` - Comprehensive test suite
 - `demo_complete.py` - Complete functionality demonstration
 
 #### Modified Files
 
-- `healthcare_imgsec/__init__.py` - Lazy-loaded public API exports
-- `healthcare_imgsec/kms/__init__.py` - Added get_kms_client function
+- `pymedsec/__init__.py` - Lazy-loaded public API exports
+- `pymedsec/kms/__init__.py` - Added get_kms_client function
 - `pyproject.toml` - Updated dependencies and entry points
 - `README.md` - Updated with public API documentation
 

@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from healthcare_imgsec.blockchain import create_blockchain_adapter
-from healthcare_imgsec.blockchain.base import BlockchainAdapter
-from healthcare_imgsec.blockchain.mock import MockBlockchainAdapter
-from healthcare_imgsec.audit import AuditLogger, verify_blockchain_anchors
+from pymedsec.blockchain import create_blockchain_adapter
+from pymedsec.blockchain.base import BlockchainAdapter
+from pymedsec.blockchain.mock import MockBlockchainAdapter
+from pymedsec.audit import AuditLogger, verify_blockchain_anchors
 
 
 class TestBlockchainAdapterBase:
@@ -393,7 +393,7 @@ class TestEthereumAdapter:
         """Test Ethereum adapter handles missing web3 dependency."""
         # This test will pass even without web3 installed
         try:
-            from healthcare_imgsec.blockchain.ethereum import EthereumBlockchainAdapter
+            from pymedsec.blockchain.ethereum import EthereumBlockchainAdapter
 
             # If web3 is available, test initialization without connection
             with pytest.raises((ImportError, ConnectionError)):
@@ -409,7 +409,7 @@ class TestHyperledgerAdapter:
 
     def test_hyperledger_not_implemented(self):
         """Test Hyperledger adapter raises NotImplementedError."""
-        from healthcare_imgsec.blockchain.hyperledger import HyperledgerBlockchainAdapter
+        from pymedsec.blockchain.hyperledger import HyperledgerBlockchainAdapter
 
         with pytest.raises(NotImplementedError):
             HyperledgerBlockchainAdapter()

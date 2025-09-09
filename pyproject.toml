@@ -67,7 +67,7 @@ blockchain = [
 ]
 
 [project.scripts]
-pymedsec = "healthcare_imgsec.cli:main"
+pymedsec = "pymedsec.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/example/pymedsec"
@@ -77,10 +77,10 @@ Issues = "https://github.com/example/pymedsec/issues"
 Changelog = "https://github.com/example/pymedsec/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-include = ["healthcare_imgsec*"]
+include = ["pymedsec*"]
 
 [tool.setuptools.package-data]
-healthcare_imgsec = ["py.typed", "policies/*.yaml"]
+pymedsec = ["py.typed", "policies/*.yaml"]
 
 [tool.black]
 line-length = 88
@@ -95,7 +95,7 @@ python_functions = "test_*"
 addopts = "-v --tb=short"
 
 [tool.coverage.run]
-source = ["healthcare_imgsec"]
+source = ["pymedsec"]
 omit = ["*/tests/*", "*/test_*"]
 
 [tool.coverage.report]

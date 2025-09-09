@@ -7,9 +7,9 @@ import base64
 from unittest.mock import Mock, patch
 import pytest
 
-from healthcare_imgsec.crypto import encrypt_data, decrypt_data, EncryptedPackage
-from healthcare_imgsec.kms.mock import MockKMSAdapter
-from healthcare_imgsec.config import SecurityConfig
+from pymedsec.crypto import encrypt_data, decrypt_data, EncryptedPackage
+from pymedsec.kms.mock import MockKMSAdapter
+from pymedsec.config import SecurityConfig
 
 
 class TestEncryptedPackage:
@@ -89,7 +89,7 @@ class TestEncryptionFunctions:
         # Create package from sample
         package = EncryptedPackage.from_dict(sample_encrypted_package)
 
-        with patch('healthcare_imgsec.crypto.AESGCM') as mock_aesgcm:
+        with patch('pymedsec.crypto.AESGCM') as mock_aesgcm:
             # Mock the AES-GCM decryption
             mock_cipher = Mock()
             mock_cipher.decrypt.return_value = b"decrypted_image_data"
@@ -111,7 +111,7 @@ class TestEncryptionFunctions:
         mock_kms.decrypt = Mock(return_value=test_dek)
 
         # Encrypt data
-        with patch('healthcare_imgsec.crypto.os.urandom') as mock_urandom:
+        with patch('pymedsec.crypto.os.urandom') as mock_urandom:
             # Mock DEK and nonce generation
             mock_urandom.side_effect = [test_dek, b"test_nonce_12"]
 
@@ -175,7 +175,7 @@ class TestEncryptionFunctions:
         """Test that nonces are unique for each encryption."""
         mock_kms.encrypt = Mock(return_value=b"encrypted_dek")
 
-        with patch('healthcare_imgsec.crypto.os.urandom') as mock_urandom:
+        with patch('pymedsec.crypto.os.urandom') as mock_urandom:
             # Generate different nonces for each call
             nonces = [b"nonce_1_data", b"nonce_2_data"]
             mock_urandom.side_effect = [
@@ -219,7 +219,7 @@ class TestSecurityProperties:
         """Test that different encryptions use different keys."""
         mock_kms.encrypt = Mock(return_value=b"encrypted_dek")
 
-        with patch('healthcare_imgsec.crypto.os.urandom') as mock_urandom:
+        with patch('pymedsec.crypto.os.urandom') as mock_urandom:
             # Generate different DEKs for each encryption
             dek1 = b"key_1_data_256bit_xxxxxxxxx"  # 32 bytes
             dek2 = b"key_2_data_256bit_yyyyyyyyy"  # 32 bytes
@@ -244,7 +244,7 @@ class TestSecurityProperties:
 
         mock_kms.decrypt = Mock(return_value=b"decrypted_dek")
 
-        with patch('healthcare_imgsec.crypto.AESGCM') as mock_aesgcm:
+        with patch('pymedsec.crypto.AESGCM') as mock_aesgcm:
             mock_cipher = Mock()
             mock_cipher.decrypt.side_effect = Exception(
                 "Authentication tag verification failed")
@@ -265,7 +265,7 @@ class TestSecurityProperties:
 
         mock_kms.decrypt = Mock(return_value=b"decrypted_dek")
 
-        with patch('healthcare_imgsec.crypto.AESGCM') as mock_aesgcm:
+        with patch('pymedsec.crypto.AESGCM') as mock_aesgcm:
             mock_cipher = Mock()
             mock_cipher.decrypt.side_effect = Exception("AAD mismatch")
             mock_aesgcm.return_value = mock_cipher

@@ -6,8 +6,8 @@ This script shows how to enable and use blockchain anchoring for audit logs
 in the healthcare image security system.
 """
 
-from healthcare_imgsec.blockchain import create_blockchain_adapter
-from healthcare_imgsec.audit import AuditLogger, verify_blockchain_anchors
+from pymedsec.blockchain import create_blockchain_adapter
+from pymedsec.audit import AuditLogger, verify_blockchain_anchors
 import os
 import tempfile
 import sys
@@ -185,14 +185,14 @@ def demonstrate_hyperledger_setup():
         print(f"     {key}: {value}")
 
     print("\n💻 Usage Example:")
-    print("     from healthcare_imgsec.blockchain.hyperledger import HyperledgerBlockchainAdapter")
+    print("     from pymedsec.blockchain.hyperledger import HyperledgerBlockchainAdapter")
     print("     adapter = HyperledgerBlockchainAdapter(config)")
     print("     result = adapter.submit_digest('a1b2c3...', {'metadata': 'value'})")
 
     print("\n📁 See examples/hyperledger_config_example.json for full configuration")
 
     try:
-        from healthcare_imgsec.blockchain.hyperledger import HyperledgerBlockchainAdapter
+        from pymedsec.blockchain.hyperledger import HyperledgerBlockchainAdapter
         print("✅ Hyperledger adapter module available")
 
         # Try to create adapter (will fail without SDK but shows structure)

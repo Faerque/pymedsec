@@ -1,2 +1,2 @@
 [console_scripts]
-pymedsec = healthcare_imgsec.cli:main
+pymedsec = pymedsec.cli:main

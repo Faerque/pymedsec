@@ -1,8 +1,8 @@
 """
 Test configuration and fixtures for pymedsec package.
 """
-from healthcare_imgsec.kms.mock import MockKMSAdapter
-from healthcare_imgsec.config import SecurityConfig
+from pymedsec.kms.mock import MockKMSAdapter
+from pymedsec.config import SecurityConfig
 import os
 import tempfile
 import shutil

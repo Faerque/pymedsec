@@ -62,7 +62,7 @@ class VaultAdapter(KMSAdapter):
         key_name = key_ref or self.key_name
         if not key_name:
             raise ValueError("No key_name specified in constructor or method call")
-            
+
         try:
             # Vault Transit doesn't have generate_data_key, so we generate locally
             if key_spec == '256':
@@ -86,7 +86,7 @@ class VaultAdapter(KMSAdapter):
         key_name = key_ref or self.key_name
         if not key_name:
             raise ValueError("No key_name specified in constructor or method call")
-            
+
         try:
             # Encode plaintext key to base64 for Vault
             b64_plaintext = base64.b64encode(plaintext_key).decode('utf-8')
@@ -117,7 +117,7 @@ class VaultAdapter(KMSAdapter):
         key_name = key_ref or self.key_name
         if not key_name:
             raise ValueError("No key_name specified in constructor or method call")
-            
+
         try:
             # Convert wrapped_key back to string format expected by Vault
             if isinstance(wrapped_key, bytes):

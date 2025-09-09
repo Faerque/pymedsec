@@ -5,8 +5,8 @@ import os
 from unittest.mock import Mock, patch
 import pytest
 
-from healthcare_imgsec.sanitize import sanitize_dicom_metadata, sanitize_exif_metadata, sanitize_image
-from healthcare_imgsec.config import SecurityConfig
+from pymedsec.sanitize import sanitize_dicom, sanitize_image
+from pymedsec.config import SecurityConfig
 
 
 class TestDicomSanitization:
@@ -203,7 +203,7 @@ class TestImageSanitization:
         dicom_file = temp_dir / "test.dcm"
         dicom_file.write_bytes(b"DICM" + b"test_dicom_data" * 100)
 
-        with patch('healthcare_imgsec.sanitize.pydicom') as mock_pydicom:
+        with patch('pymedsec.sanitize.pydicom') as mock_pydicom:
             # Mock pydicom operations
             mock_dataset = Mock()
             mock_dataset.to_dict.return_value = {
@@ -224,7 +224,7 @@ class TestImageSanitization:
         png_file = temp_dir / "test.png"
         png_file.write_bytes(b"PNG_test_data" * 50)
 
-        with patch('healthcare_imgsec.sanitize.Image') as mock_image:
+        with patch('pymedsec.sanitize.Image') as mock_image:
             # Mock PIL operations
             mock_img = Mock()
             mock_img.format = "PNG"
@@ -253,7 +253,7 @@ class TestImageSanitization:
         corrupted_file = temp_dir / "corrupted.jpg"
         corrupted_file.write_bytes(b"corrupted_jpeg_data")
 
-        with patch('healthcare_imgsec.sanitize.Image.open') as mock_open:
+        with patch('pymedsec.sanitize.Image.open') as mock_open:
             mock_open.side_effect = Exception("Cannot identify image file")
 
             result = sanitize_image(str(corrupted_file), mock_config)
@@ -346,7 +346,7 @@ class TestSanitizationSecurity:
         }
 
         # Force an error condition
-        with patch('healthcare_imgsec.sanitize.process_dicom_tag') as mock_process:
+        with patch('pymedsec.sanitize.process_dicom_tag') as mock_process:
             mock_process.side_effect = Exception("Processing error occurred")
 
             try:
@@ -359,7 +359,7 @@ class TestSanitizationSecurity:
 
     def test_sanitization_audit_logging(self, mock_config, sample_dicom_metadata):
         """Test that sanitization operations are properly audited."""
-        with patch('healthcare_imgsec.sanitize.audit_logger') as mock_audit:
+        with patch('pymedsec.sanitize.audit_logger') as mock_audit:
             sanitize_dicom_metadata(sample_dicom_metadata, mock_config)
 
             # Should log sanitization operation
