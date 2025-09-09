@@ -600,17 +600,17 @@ def generate_audit_signature(entry_data, config_obj):
     # Get signing key from config
     audit_config = getattr(config_obj, 'get_audit_config', lambda: {})()
     signing_key = audit_config.get('signing_key', 'default_key')
-    
+
     # Serialize entry data
     entry_json = json.dumps(entry_data, sort_keys=True, separators=(',', ':'))
-    
+
     # Generate HMAC signature
     signature = hmac.new(
         signing_key.encode('utf-8'),
         entry_json.encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
-    
+
     return signature
 
 
@@ -627,17 +627,17 @@ def verify_audit_chain(audit_file_path, config_obj):
     try:
         audit_config = getattr(config_obj, 'get_audit_config', lambda: {})()
         signing_key = audit_config.get('signing_key', 'default_key')
-        
+
         with open(audit_file_path, 'r') as f:
             for line_num, line in enumerate(f, 1):
                 try:
                     entry = json.loads(line.strip())
-                    
+
                     # Extract signature
                     stored_signature = entry.pop('hmac_sha256', None)
                     if not stored_signature:
                         return False
-                    
+
                     # Recompute signature
                     entry_json = json.dumps(entry, sort_keys=True, separators=(',', ':'))
                     computed_signature = hmac.new(
@@ -645,14 +645,14 @@ def verify_audit_chain(audit_file_path, config_obj):
                         entry_json.encode('utf-8'),
                         hashlib.sha256
                     ).hexdigest()
-                    
+
                     if stored_signature != computed_signature:
                         return False
-                        
+
                 except (json.JSONDecodeError, KeyError):
                     return False
-        
+
         return True
-        
+
     except Exception:
         return False
