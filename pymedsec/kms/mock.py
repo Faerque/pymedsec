@@ -44,7 +44,7 @@ class MockKMSAdapter(KMSAdapter):
             **kwargs: Additional arguments for compatibility
 
         Returns:
-            dict: Dictionary with 'plaintext_key' and 'encrypted_key' for testing compatibility
+            bytes: Plaintext data key
         """
         # Support both key_ref and legacy key_id parameter
         if key_ref is None and key_id is not None:
@@ -61,15 +61,11 @@ class MockKMSAdapter(KMSAdapter):
                 raise ValueError(f"Unsupported key spec: {key_spec}")
 
             data_key = os.urandom(key_size)
-            wrapped_key = self.wrap_data_key(data_key, key_ref)
 
             logger.debug("Generated mock data key for key_ref: %s", key_ref)
 
-            # Return dict format for test compatibility
-            return {
-                'plaintext_key': data_key,
-                'encrypted_key': wrapped_key
-            }
+            # Return just the bytes as per the interface
+            return data_key
 
         except Exception as e:
             logger.error("Mock data key generation failed: %s", e)
