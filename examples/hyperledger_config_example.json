@@ -1,0 +1,28 @@
+{
+  "description": "Example Hyperledger Fabric configuration for PyMedSec",
+  "blockchain_config": {
+    "type": "hyperledger",
+    "network_profile": "network.json",
+    "channel_name": "mychannel",
+    "chaincode_name": "audit_chaincode",
+    "org_name": "Org1MSP",
+    "peer_name": "peer0.org1.example.com",
+    "user_name": "Admin",
+    "user_secret": "adminpw"
+  },
+  "setup_instructions": [
+    "1. Install Hyperledger Fabric Python SDK: pip install fabric-sdk-py",
+    "2. Set up your Hyperledger Fabric network",
+    "3. Deploy the audit chaincode to your network",
+    "4. Update the network_profile path to your network.json file",
+    "5. Configure the appropriate channel, chaincode, and organization details"
+  ],
+  "chaincode_requirements": {
+    "description": "The audit chaincode should implement these functions:",
+    "functions": [
+      "submitDigest(digest, metadata) - Store audit digest on blockchain",
+      "verifyDigest(digest, txId) - Verify digest exists and return details",
+      "getTransaction(txId) - Get transaction details by ID"
+    ]
+  }
+}

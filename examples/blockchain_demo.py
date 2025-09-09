@@ -159,6 +159,56 @@ def demonstrate_blockchain_adapter():
         print(f"❌ Error during blockchain operations: {e}")
 
 
+def demonstrate_hyperledger_setup():
+    """Demonstrate how to set up Hyperledger Fabric blockchain adapter."""
+    print("\n🔧 Hyperledger Fabric Setup Guide...")
+    print("=" * 50)
+    
+    print("📋 Prerequisites:")
+    print("  1. Install Hyperledger Fabric Python SDK:")
+    print("     pip install fabric-sdk-py")
+    print("  2. Set up Hyperledger Fabric network")
+    print("  3. Deploy audit chaincode (see examples/hyperledger_chaincode_example.go)")
+    
+    print("\n⚙️  Configuration Example:")
+    config = {
+        'network_profile': '/path/to/network.json',
+        'channel_name': 'mychannel',
+        'chaincode_name': 'audit_chaincode',
+        'org_name': 'Org1MSP',
+        'peer_name': 'peer0.org1.example.com',
+        'user_name': 'Admin',
+        'user_secret': 'adminpw'
+    }
+    
+    for key, value in config.items():
+        print(f"     {key}: {value}")
+    
+    print("\n💻 Usage Example:")
+    print("     from healthcare_imgsec.blockchain.hyperledger import HyperledgerBlockchainAdapter")
+    print("     adapter = HyperledgerBlockchainAdapter(config)")
+    print("     result = adapter.submit_digest('a1b2c3...', {'metadata': 'value'})")
+    
+    print("\n📁 See examples/hyperledger_config_example.json for full configuration")
+    
+    try:
+        from healthcare_imgsec.blockchain.hyperledger import HyperledgerBlockchainAdapter
+        print("✅ Hyperledger adapter module available")
+        
+        # Try to create adapter (will fail without SDK but shows structure)
+        try:
+            adapter = HyperledgerBlockchainAdapter({})
+            print("✅ Hyperledger Fabric SDK detected")
+        except ImportError as e:
+            print(f"⚠️  Hyperledger Fabric SDK not installed: {e}")
+            print("   Install with: pip install fabric-sdk-py")
+        except Exception as e:
+            print(f"⚠️  Hyperledger configuration needed: {e}")
+            
+    except ImportError:
+        print("❌ Hyperledger adapter not available")
+
+
 def cleanup_and_summary(temp_dir):
     """Clean up and show summary."""
     print(f"\n🧹 Cleaning up temporary files in {temp_dir}")
@@ -190,6 +240,9 @@ def main():
 
         # Show direct adapter usage
         demonstrate_blockchain_adapter()
+
+        # Show Hyperledger setup guide
+        demonstrate_hyperledger_setup()
 
         # Cleanup and summary
         cleanup_and_summary(temp_dir)

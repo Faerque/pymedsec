@@ -19,11 +19,11 @@ class BlockchainAdapter(ABC):
 
     def submit_digest(self, digest, metadata=None):
         """Submit a digest to the blockchain.
-        
+
         Args:
             digest (str): The digest to submit
             metadata (dict, optional): Additional metadata
-            
+
         Returns:
             dict: Transaction details with 'tx_id' and 'status'
         """
@@ -56,7 +56,7 @@ class BlockchainAdapter(ABC):
         """
         raise NotImplementedError
 
-    def validate_digest(self, digest_hex: str) -> bool:
+    def validate_digest(self, digest_hex):
         """
         Validate digest format.
 

@@ -156,8 +156,8 @@ class EthereumBlockchainAdapter(BlockchainAdapter):
             # Get block info
             block_number = tx.blockNumber
             current_block = self.w3.eth.block_number
-            confirmations = max(0, current_block -
-                                block_number + 1) if block_number else 0
+            confirmations = max(0, current_block
+                                - block_number + 1) if block_number else 0
 
             return {
                 'verified': verified,
