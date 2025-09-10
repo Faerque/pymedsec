@@ -1,13 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Configuration API for policy management.
 
 Provides utilities for resolving policy references and managing active policies.
 """
 
-import json
 import os
-from pathlib import Path
-
 import yaml
 
 try:
@@ -120,9 +119,9 @@ def load_policy_dict(policy_ref):
         return policy_dict
 
     except yaml.YAMLError as e:
-        raise RuntimeError(f"Invalid YAML in policy file {policy_path}: {e}")
+        raise RuntimeError(f"Invalid YAML in policy file {policy_path}: {e}") from e
     except Exception as e:
-        raise RuntimeError(f"Error loading policy file {policy_path}: {e}")
+        raise RuntimeError(f"Error loading policy file {policy_path}: {e}") from e
 
 
 def set_active_policy(policy_dict):

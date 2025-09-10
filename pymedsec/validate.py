@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Cryptographic validation and nonce management.
 
@@ -10,7 +12,6 @@ import hashlib
 import os
 import time
 from pathlib import Path
-from collections import defaultdict
 
 from . import config
 

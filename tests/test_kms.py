@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Clean KMS tests for pymedsec package.
 
@@ -7,7 +9,6 @@ focusing on the MockKMSAdapter which is the primary adapter used.
 
 import os
 import pytest
-from unittest.mock import Mock, patch
 
 from pymedsec.kms.base import KMSAdapter
 from pymedsec.kms.mock import MockKMSAdapter
@@ -18,8 +19,11 @@ class TestKMSAdapterBase:
 
     def test_abstract_interface(self):
         """Test that KMSAdapter is properly abstract."""
-        with pytest.raises(TypeError):
-            KMSAdapter()  # Should not be instantiable
+        # Check that the class has abstract methods without instantiating
+        assert KMSAdapter.__abstractmethods__
+        assert "generate_data_key" in KMSAdapter.__abstractmethods__
+        assert "wrap_data_key" in KMSAdapter.__abstractmethods__
+        assert "unwrap_data_key" in KMSAdapter.__abstractmethods__
 
     def test_required_methods(self):
         """Test that required methods are defined in interface."""

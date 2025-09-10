@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Medical image intake and tensor conversion.
 
@@ -14,7 +16,6 @@ import numpy as np
 from PIL import Image
 import pydicom
 
-from . import config
 
 logger = logging.getLogger(__name__)
 
@@ -208,13 +209,12 @@ def create_reader(filepath, format_hint=None):
             try:
                 Image.open(filepath)
                 return StandardImageReader(filepath)
-            except Exception:
-                raise ValueError(f"Unsupported image format: {filepath}")
+            except Exception as exc:
+                raise ValueError(f"Unsupported image format: {filepath}") from exc
 
 
 def to_tensor(data, format_hint=None):
     """Convert image data to normalized tensor for ML training."""
-    cfg = config.get_config()
 
     # Handle different input types
     if isinstance(data, (str, Path)):

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Envelope encryption with AES-256-GCM and pluggable KMS backends.
 
@@ -206,7 +208,6 @@ def decrypt_data(encrypted_package, verify_aad=True):
     Returns:
         bytes: Decrypted plaintext data
     """
-    cfg = config.get_config()
 
     # Parse package if JSON string
     if isinstance(encrypted_package, str):

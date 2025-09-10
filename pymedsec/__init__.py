@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 # Copyright 2025 PyMedSec Contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +17,7 @@
 """
 Healthcare Image Security Package
 
-A production-grade Python package for secure medical image processing 
+A production-grade Python package for secure medical image processing
 with HIPAA/GDPR/GxP compliance features.
 
 Public API:
@@ -23,7 +25,6 @@ Public API:
         - load_policy: Load policy by name or path
         - set_active_policy: Set the active policy
         - get_active_policy: Get current active policy
-        - list_policies: List available bundled policies
 
     Data Processing:
         - scrub_dicom: Remove PHI from DICOM files
@@ -40,7 +41,7 @@ Public API:
 
 Example:
     Basic HIPAA workflow:
-    
+
     >>> from pymedsec import load_policy, scrub_dicom, get_kms_client, encrypt_blob
     >>> policy = load_policy("hipaa_default")
     >>> kms = get_kms_client("mock")
@@ -55,13 +56,14 @@ __email__ = "security@example.com"
 __license__ = "Apache-2.0"
 
 # Lazy imports for the public API
+
+
 def __getattr__(name):
     """Lazy loading of public API functions to avoid heavy imports at startup."""
     if name in [
         "load_policy",
-        "set_active_policy", 
+        "set_active_policy",
         "get_active_policy",
-        "list_policies",
         "scrub_dicom",
         "scrub_image",
         "encrypt_blob",
@@ -74,7 +76,6 @@ def __getattr__(name):
             load_policy,
             set_active_policy,
             get_active_policy,
-            list_policies,
             scrub_dicom,
             scrub_image,
             encrypt_blob,
@@ -90,7 +91,6 @@ def __getattr__(name):
                 "load_policy": load_policy,
                 "set_active_policy": set_active_policy,
                 "get_active_policy": get_active_policy,
-                "list_policies": list_policies,
                 "scrub_dicom": scrub_dicom,
                 "scrub_image": scrub_image,
                 "encrypt_blob": encrypt_blob,
@@ -101,7 +101,6 @@ def __getattr__(name):
             }
         )
         return globals()[name]
-    
     # Legacy imports for backward compatibility
     if name in ["encrypt_data", "decrypt_data", "sanitize_dicom", "sanitize_image", "to_tensor", "load_config"]:
         if name == "encrypt_data":
@@ -122,21 +121,20 @@ def __getattr__(name):
         elif name == "load_config":
             from .config import load_config
             return load_config
-            
+
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 # For static analysis and IDE support
 __all__ = [
     "__version__",
-    "__author__", 
+    "__author__",
     "__email__",
     "__license__",
     # Public API
     "load_policy",
     "set_active_policy",
-    "get_active_policy", 
-    "list_policies",
+    "get_active_policy",
     "scrub_dicom",
     "scrub_image",
     "encrypt_blob",
@@ -148,7 +146,7 @@ __all__ = [
     "encrypt_data",
     "decrypt_data",
     "sanitize_dicom",
-    "sanitize_image", 
+    "sanitize_image",
     "to_tensor",
     "load_config",
 ]

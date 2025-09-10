@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Public API for pymedsec package.
 
@@ -11,7 +13,6 @@ from .config_api import (
     load_policy_dict,
     set_active_policy,
     get_active_policy,
-    list_policies,
 )
 from .kms import get_kms_client
 
@@ -70,7 +71,7 @@ def scrub_dicom(dicom_bytes, policy=None):
             import logging
 
             logging.warning(
-                f"Config-based sanitization failed, doing minimal: {config_error}"
+                "Config-based sanitization failed, doing minimal: %s", config_error
             )
             sanitized_dataset = dataset.copy()
             # Remove basic PHI tags manually
@@ -374,7 +375,8 @@ class SecureImageDataset:
 
         if not self.file_paths:
             logger.warning(
-                f"No encrypted packages found in {dataset_path} with patterns {patterns}"
+                "No encrypted packages found in %s with patterns %s",
+                dataset_path, patterns
             )
 
     def __len__(self):
@@ -400,9 +402,8 @@ class SecureImageDataset:
 
         try:
             # Load the encrypted package
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 pkg = json.load(f)
-
             # Determine format hint from metadata if available
             format_hint = None
             if "metadata" in pkg and "format" in pkg["metadata"]:

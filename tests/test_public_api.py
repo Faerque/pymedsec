@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Tests for the public API of pymedsec package.
 
@@ -5,59 +7,17 @@ Tests cover all public functions with both success and failure cases.
 Uses synthetic data to avoid dependency on real medical images.
 """
 
-import os
-import json
-import tempfile
-import pytest
-import unittest
 from unittest.mock import patch, MagicMock
+import unittest
 from io import BytesIO
-
-# Test imports with proper error handling
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-
-try:
-    from PIL import Image
-
-    HAS_PIL = True
-except ImportError:
-    HAS_PIL = False
-
-try:
-    from pydicom import Dataset, FileDataset
-    from pydicom.uid import generate_uid
-
-    HAS_PYDICOM = True
-except ImportError:
-    HAS_PYDICOM = False
-
-try:
-    import pydicom
-    from pydicom.dataset import Dataset, FileDataset
-    from pydicom.uid import ExplicitVRLittleEndian
-
-    HAS_PYDICOM = True
-except ImportError:
-    HAS_PYDICOM = False
-
-try:
-    from PIL import Image
-
-    HAS_PIL = True
-except ImportError:
-    HAS_PIL = False
+import pytest
+import importlib.util
 
 # Import the public API
 from pymedsec.public_api import (
     load_policy,
     set_active_policy,
     get_active_policy,
-    list_policies,
     scrub_dicom,
     scrub_image,
     encrypt_blob,
@@ -66,6 +26,25 @@ from pymedsec.public_api import (
     get_kms_client,
     SecureImageDataset,
 )
+from pymedsec.config_api import list_policies
+
+# Test imports with proper error handling
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+    np = None
+
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+    Image = None
+
+# Test availability of optional dependencies
+HAS_PYDICOM = importlib.util.find_spec("pydicom") is not None
 
 
 class TestPolicyManagement(unittest.TestCase):
@@ -89,8 +68,11 @@ class TestPolicyManagement(unittest.TestCase):
         expected_keys = {"sanitization", "encryption", "audit"}
         assert any(key in policy for key in expected_keys)
 
-    def test_load_policy_by_path(self, tmp_path):
+    def test_load_policy_by_path(self):
         """Test loading policy from absolute path."""
+        import tempfile
+        import os
+
         # Create a temporary YAML policy file
         policy_content = """
 policy_type: "custom"
@@ -102,13 +84,17 @@ encryption:
 audit:
   enabled: true
 """
-        policy_file = tmp_path / "custom.yaml"
-        policy_file.write_text(policy_content)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+            f.write(policy_content)
+            policy_file = f.name
 
-        policy = load_policy(str(policy_file))
-        assert isinstance(policy, dict)
-        assert policy["policy_type"] == "custom"
-        assert policy["sanitization"]["remove_private_tags"] is True
+        try:
+            policy = load_policy(policy_file)
+            assert isinstance(policy, dict)
+            assert policy["policy_type"] == "custom"
+            assert policy["sanitization"]["remove_private_tags"] is True
+        finally:
+            os.unlink(policy_file)
 
     def test_load_policy_none_defaults_to_hipaa(self):
         """Test that load_policy(None) defaults to hipaa_default."""
@@ -141,7 +127,8 @@ audit:
         assert active is not policy  # Should be a copy
 
         # Modifying returned policy shouldn't affect stored one
-        active["modified"] = True
+        if active is not None:  # Type guard for linting
+            active["modified"] = True
         assert get_active_policy() == policy
 
     def test_set_active_policy_invalid_type(self):
@@ -222,7 +209,7 @@ class TestDataProcessing(unittest.TestCase):
             pytest.skip("pydicom not available")
 
         # Create synthetic DICOM file with proper file meta
-        from pydicom import Dataset, FileDataset
+        from pydicom.dataset import Dataset, FileDataset
         from pydicom.uid import ExplicitVRLittleEndian
 
         # Create file meta information
@@ -232,8 +219,13 @@ class TestDataProcessing(unittest.TestCase):
         file_meta.ImplementationClassUID = "1.2.3.4"
         file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
 
-        # Create main dataset
-        ds = FileDataset("test", {}, file_meta=file_meta, preamble=b"\0" * 128)
+        # Create main dataset - cast file_meta to suppress type warnings
+        ds = FileDataset(
+            "test",
+            {},
+            file_meta=file_meta,  # type: ignore[arg-type]
+            preamble=b"\0" * 128,
+        )
         ds.PatientName = "Test^Patient"
         ds.PatientID = "12345"
         ds.SOPClassUID = "1.2.840.10008.5.1.4.1.1.2"
@@ -263,7 +255,7 @@ class TestDataProcessing(unittest.TestCase):
 
     def test_scrub_image_synthetic(self):
         """Test image scrubbing with a synthetic file"""
-        if not HAS_PIL:
+        if not HAS_PIL or Image is None:
             pytest.skip("PIL not available")
 
         # Create a simple test image
@@ -326,6 +318,9 @@ class TestDataProcessing(unittest.TestCase):
     @pytest.mark.skipif(not HAS_NUMPY, reason="numpy not available")
     def test_decrypt_to_tensor_raw_data(self):
         """Test decrypt_to_tensor with raw data."""
+        if np is None:
+            pytest.skip("numpy not available")
+
         test_data = b"raw tensor data"
         kms = get_kms_client("mock")
         pkg = {"encrypted": "data"}
@@ -344,6 +339,9 @@ class TestDataProcessing(unittest.TestCase):
     )
     def test_decrypt_to_tensor_dicom(self):
         """Test decrypt_to_tensor with DICOM format hint."""
+        if np is None:
+            pytest.skip("numpy not available")
+
         # Create synthetic DICOM with pixel data
         dicom_data = self._create_synthetic_dicom_with_pixels()
         kms = get_kms_client("mock")
@@ -374,20 +372,27 @@ class TestDataProcessing(unittest.TestCase):
         if not HAS_PYDICOM:
             return b"fake_dicom_data"
 
+        # Import locally to avoid issues
+        from pydicom.dataset import Dataset, FileDataset
+
         # Create a minimal DICOM dataset
         file_meta = Dataset()
         file_meta.MediaStorageSOPClassUID = "1.2.840.10008.5.1.4.1.1.2"
         file_meta.MediaStorageSOPInstanceUID = "1.2.3.4.5.6.7.8.9"
         file_meta.ImplementationClassUID = "1.2.3.4.5"
 
-        ds = FileDataset("test", {}, file_meta=file_meta, preamble=b"\0" * 128)
+        # Use type ignore to suppress type warning for file_meta
+        ds = FileDataset(
+            "test",
+            {},
+            file_meta=file_meta,  # type: ignore[arg-type]
+            preamble=b"\0" * 128,
+        )
         ds.PatientName = "Test^Patient"
         ds.PatientID = "12345"
         ds.StudyDate = "20240101"
 
         # Save to bytes
-        from io import BytesIO
-
         output = BytesIO()
         ds.save_as(output, write_like_original=False)
         return output.getvalue()
@@ -398,13 +403,8 @@ class TestDataProcessing(unittest.TestCase):
 
     def _create_synthetic_png(self):
         """Create minimal synthetic PNG data."""
-        if not HAS_PIL:
+        if not HAS_PIL or not HAS_NUMPY or Image is None or np is None:
             return b"fake_png_data"
-
-        # Create a small test image
-        import numpy as np
-        from PIL import Image
-        from io import BytesIO
 
         # Create 2x2 RGB image
         data = np.array(
@@ -421,71 +421,93 @@ class TestDataProcessing(unittest.TestCase):
 class TestSecureImageDataset(unittest.TestCase):
     """Test SecureImageDataset class."""
 
-    def test_dataset_creation(self, tmp_path):
+    def test_dataset_creation(self):
         """Test dataset creation and basic properties."""
+        import tempfile
+        import os
+
         # Create some fake encrypted package files
-        pkg_dir = tmp_path / "packages"
-        pkg_dir.mkdir()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            pkg_dir = os.path.join(tmp_dir, "packages")
+            os.makedirs(pkg_dir)
 
-        pkg1 = pkg_dir / "image1.pkg.json"
-        pkg1.write_text('{"encrypted": "data1"}')
+            pkg1 = os.path.join(pkg_dir, "image1.pkg.json")
+            with open(pkg1, 'w', encoding='utf-8') as f:
+                f.write('{"encrypted": "data1"}')
 
-        pkg2 = pkg_dir / "image2.pkg.json"
-        pkg2.write_text('{"encrypted": "data2"}')
+            pkg2 = os.path.join(pkg_dir, "image2.pkg.json")
+            with open(pkg2, 'w', encoding='utf-8') as f:
+                f.write('{"encrypted": "data2"}')
 
-        kms = get_kms_client("mock")
-        dataset = SecureImageDataset(str(pkg_dir), kms_client=kms)
+            kms = get_kms_client("mock")
+            dataset = SecureImageDataset(pkg_dir, kms_client=kms)
 
-        assert len(dataset) == 2
-        assert len(dataset.file_paths) == 2
+            assert len(dataset) == 2
+            assert len(dataset.file_paths) == 2
 
-    def test_dataset_empty_directory(self, tmp_path):
+    def test_dataset_empty_directory(self):
         """Test dataset with empty directory."""
-        empty_dir = tmp_path / "empty"
-        empty_dir.mkdir()
+        import tempfile
+        import os
 
-        kms = get_kms_client("mock")
-        dataset = SecureImageDataset(str(empty_dir), kms_client=kms)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            empty_dir = os.path.join(tmp_dir, "empty")
+            os.makedirs(empty_dir)
 
-        assert len(dataset) == 0
+            kms = get_kms_client("mock")
+            dataset = SecureImageDataset(empty_dir, kms_client=kms)
+
+            assert len(dataset) == 0
 
     @pytest.mark.skipif(not HAS_NUMPY, reason="numpy not available")
-    def test_dataset_iteration(self, tmp_path):
+    def test_dataset_iteration(self):
         """Test dataset iteration."""
+        import tempfile
+        import os
+
+        if np is None:
+            pytest.skip("numpy not available")
+
         # Create fake package
-        pkg_dir = tmp_path / "packages"
-        pkg_dir.mkdir()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            pkg_dir = os.path.join(tmp_dir, "packages")
+            os.makedirs(pkg_dir)
 
-        pkg1 = pkg_dir / "image1.pkg.json"
-        pkg1.write_text('{"encrypted": "data1", "metadata": {"format": "png"}}')
+            pkg1 = os.path.join(pkg_dir, "image1.pkg.json")
+            with open(pkg1, 'w', encoding='utf-8') as f:
+                f.write('{"encrypted": "data1", "metadata": {"format": "png"}}')
 
-        kms = get_kms_client("mock")
-        dataset = SecureImageDataset(str(pkg_dir), kms_client=kms)
+            kms = get_kms_client("mock")
+            dataset = SecureImageDataset(pkg_dir, kms_client=kms)
 
-        # Mock the decrypt_to_tensor function
-        with patch("pymedsec.public_api.decrypt_to_tensor") as mock_decrypt:
-            mock_decrypt.return_value = np.array([[1, 2], [3, 4]])
+            # Mock the decrypt_to_tensor function
+            with patch("pymedsec.public_api.decrypt_to_tensor") as mock_decrypt:
+                mock_decrypt.return_value = np.array([[1, 2], [3, 4]])
 
-            # Test iteration
-            tensors = list(dataset)
-            assert len(tensors) == 1
-            assert isinstance(tensors[0], np.ndarray)
+                # Test iteration
+                tensors = list(dataset)
+                assert len(tensors) == 1
+                assert isinstance(tensors[0], np.ndarray)
 
-            # Test indexing
-            tensor = dataset[0]
-            assert isinstance(tensor, np.ndarray)
-            mock_decrypt.assert_called()
+                # Test indexing
+                tensor = dataset[0]
+                assert isinstance(tensor, np.ndarray)
+                mock_decrypt.assert_called()
 
-    def test_dataset_index_out_of_range(self, tmp_path):
+    def test_dataset_index_out_of_range(self):
         """Test dataset index out of range."""
-        empty_dir = tmp_path / "empty"
-        empty_dir.mkdir()
+        import tempfile
+        import os
 
-        kms = get_kms_client("mock")
-        dataset = SecureImageDataset(str(empty_dir), kms_client=kms)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            empty_dir = os.path.join(tmp_dir, "empty")
+            os.makedirs(empty_dir)
 
-        with pytest.raises(IndexError, match="Index 0 out of range"):
-            dataset[0]
+            kms = get_kms_client("mock")
+            dataset = SecureImageDataset(empty_dir, kms_client=kms)
+
+            with pytest.raises(IndexError, match="Index 0 out of range"):
+                _ = dataset[0]  # Assign to variable to show intent
 
 
 class TestErrorHandling(unittest.TestCase):
@@ -493,7 +515,6 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_functions_with_policy_none_load_default(self):
         """Test that functions load default policy when policy=None."""
-        kms = get_kms_client("mock")
 
         # Mock the internal functions
         with patch("pymedsec.sanitize.sanitize_dicom_bytes") as mock_sanitize, patch(

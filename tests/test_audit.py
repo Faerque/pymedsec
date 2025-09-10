@@ -1,22 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Tests for the audit module - tamper-evident logging functionality.
 """
 
 import json
 import hashlib
-import hmac
 from datetime import datetime
-from unittest.mock import Mock, patch
-import pytest
+from unittest.mock import Mock
+
 
 from pymedsec.audit import (
     AuditLogger,
-    verify_audit_integrity,
-    verify_blockchain_anchors,
     generate_audit_signature,
     verify_audit_chain,
 )
-from pymedsec.config import SecurityConfig
 
 
 class TestAuditLogger:
@@ -47,7 +45,7 @@ class TestAuditLogger:
         # Verify log file was created and contains data
         assert log_file.exists()
 
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             log_entry = json.loads(f.readline())
 
         assert log_entry["action"] == "ENCRYPT"
@@ -63,7 +61,7 @@ class TestAuditLogger:
 
         logger.log_event({"action": "TEST_ACTION"})
 
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             log_entry = json.loads(f.readline())
 
         required_fields = ["timestamp", "action", "signature", "anchor_hash"]
@@ -78,7 +76,7 @@ class TestAuditLogger:
 
         logger.log_event({"action": "TEST_TIMESTAMP"})
 
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             log_entry = json.loads(f.readline())
 
         timestamp = log_entry["timestamp"]
@@ -105,7 +103,7 @@ class TestAuditLogger:
             logger.log_event(event)
 
         # Verify all events were logged
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         assert len(lines) == 3
@@ -128,7 +126,7 @@ class TestAuditLogger:
         logger2.log_event({"action": "SECOND_EVENT"})
 
         # Should have both events in file
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         assert len(lines) == 2
@@ -169,7 +167,7 @@ class TestAuditSecurity:
 
         logger.log_event({"action": "VERIFY_TEST"})
 
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             log_entry = json.loads(f.readline())
 
         # Extract signature and recreate entry without signature
@@ -187,7 +185,7 @@ class TestAuditSecurity:
         logger.log_event({"action": "ORIGINAL_ACTION"})
 
         # Read and tamper with log entry
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             log_entry = json.loads(f.readline())
 
         original_signature = log_entry["signature"]
@@ -214,7 +212,7 @@ class TestAuditSecurity:
             logger.log_event(event)
 
         # Read all log entries
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             entries = [json.loads(line) for line in f.readlines()]
 
         # Verify anchor hash chain
@@ -227,7 +225,7 @@ class TestAuditSecurity:
             }
 
             # Current anchor should be hash of (previous_anchor + current_content)
-            expected_anchor = hashlib.sha256(
+            hashlib.sha256(
                 (previous_anchor + json.dumps(current_content, sort_keys=True)).encode()
             ).hexdigest()
 
@@ -260,7 +258,7 @@ class TestAuditSecurity:
         logger.log_event({"action": "EVENT_2"})
 
         # Manually tamper with the log file
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         # Tamper with second entry
@@ -268,7 +266,7 @@ class TestAuditSecurity:
         tampered_entry["action"] = "TAMPERED_EVENT"
         lines[1] = json.dumps(tampered_entry) + "\n"
 
-        with open(log_file, "w") as f:
+        with open(log_file, "w", encoding="utf-8") as f:
             f.writelines(lines)
 
         # Chain verification should fail
@@ -305,7 +303,7 @@ class TestAuditConfiguration:
         logger_debug.log_event({"action": "DEBUG_EVENT", "level": "DEBUG"})
 
         # Both should be logged (implementation may filter based on level)
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         assert len(lines) >= 1  # At least one event should be logged
@@ -343,7 +341,7 @@ class TestAuditConfiguration:
 
         logger.log_event(custom_event)
 
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             log_entry = json.loads(f.readline())
 
         # Custom fields should be preserved
@@ -369,7 +367,7 @@ class TestAuditPerformance:
             )
 
         # Verify all events were logged
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         assert len(lines) == num_events
@@ -395,7 +393,7 @@ class TestAuditPerformance:
         logger1.log_event({"action": "CONCURRENT_3", "logger": "logger1"})
 
         # Verify all events were logged
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         assert len(lines) == 3
@@ -429,7 +427,7 @@ class TestAuditUtilities:
 
         # Parse log file
         parsed_events = []
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             for line in f:
                 parsed_events.append(json.loads(line))
 
@@ -456,7 +454,7 @@ class TestAuditUtilities:
             logger.log_event(event)
 
         # Parse and filter logs
-        with open(log_file, "r") as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             all_entries = [json.loads(line) for line in f]
 
         # Filter by action
@@ -499,15 +497,15 @@ class TestAuditUtilities:
 
         # Export for compliance (simple JSON format)
         export_file = temp_dir / "compliance_export.json"
-        with open(log_file, "r") as source:
-            with open(export_file, "w") as dest:
+        with open(log_file, "r", encoding="utf-8") as source:
+            with open(export_file, "w", encoding="utf-8") as dest:
                 events = [json.loads(line) for line in source]
                 json.dump(events, dest, indent=2)
 
         # Verify export
         assert export_file.exists()
 
-        with open(export_file, "r") as f:
+        with open(export_file, "r", encoding="utf-8") as f:
             exported_data = json.load(f)
 
         assert len(exported_data) == 2

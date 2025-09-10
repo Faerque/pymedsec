@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Tamper-evident audit logging with HMAC line signing and blockchain anchoring.
 

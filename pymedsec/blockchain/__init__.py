@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Blockchain audit anchoring module for pymedsec.
 

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Clean crypto tests for pymedsec package.
 
@@ -47,28 +49,28 @@ class TestEncryptedPackage:
 class TestEncryptionFunctions:
     """Test cases for encryption and decryption functions."""
 
-    def test_encrypt_data_basic(self, sample_image_data, setup_test_environment):
+    def test_encrypt_data_basic(self, sample_image_data):
         """Test basic data encryption functionality."""
         from pymedsec.config import load_config
         load_config()  # Initialize configuration
-        
+
         result = encrypt_data(
             sample_image_data,
             kms_key_ref="test-key",
             dataset_id="test_dataset",
-            modality="CT", 
+            modality="CT",
             pseudo_pid="TEST001",
             pixel_hash="hash123"
         )
-        
+
         assert isinstance(result, EncryptedPackage)
         assert result.schema == "imgsec/v1"
 
-    def test_encrypt_with_aad(self, sample_image_data, setup_test_environment):
+    def test_encrypt_with_aad(self, sample_image_data):
         """Test encryption with additional authenticated data."""
         from pymedsec.config import load_config
         load_config()  # Initialize configuration
-        
+
         additional_aad = {"purpose": "research", "study_id": "STUDY-001"}
 
         result = encrypt_data(
@@ -87,17 +89,17 @@ class TestEncryptionFunctions:
             assert aad_decoded["purpose"] == "research"
             assert aad_decoded["study_id"] == "STUDY-001"
 
-    def test_decrypt_data_basic(self, sample_encrypted_package, setup_test_environment):
+    def test_decrypt_data_basic(self, sample_encrypted_package):
         """Test basic data decryption functionality."""
         from pymedsec.config import load_config
         load_config()  # Initialize configuration
-        
+
         # Create package from sample
         package = EncryptedPackage.from_dict(sample_encrypted_package)
 
         # Mock KMS adapter
         mock_kms = MockKMSAdapter()
-        
+
         with patch("pymedsec.crypto.get_kms_adapter", return_value=mock_kms):
             # This test would need actual encrypted data to work properly
             # For now, just test that the function can be called
@@ -108,8 +110,8 @@ class TestEncryptionFunctions:
             except (ValueError, RuntimeError) as e:
                 # Expected - we're using mock data, accept config or decrypt errors
                 error_msg = str(e).lower()
-                assert ("decrypt" in error_msg or "invalid" in error_msg or 
-                       "configuration" in error_msg), f"Unexpected error: {e}"
+                assert ("decrypt" in error_msg or "invalid" in error_msg
+                        or "configuration" in error_msg), f"Unexpected error: {e}"
 
 
 if __name__ == "__main__":

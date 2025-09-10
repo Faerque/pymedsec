@@ -1,16 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Tests for the sanitization module - PHI removal and metadata sanitization.
 """
 
 import os
 from unittest.mock import Mock, patch
-import pytest
+
 
 from pymedsec.sanitize import sanitize_dicom, sanitize_image
-from pymedsec.config import SecurityConfig
 
 
-def sanitize_dicom_metadata(metadata, config):
+def sanitize_dicom_metadata(metadata):
     """Helper function for testing DICOM metadata sanitization."""
     # Create a mock DICOM dataset from metadata dict
     from pydicom import Dataset
@@ -39,7 +40,7 @@ def sanitize_dicom_metadata(metadata, config):
     )()
 
 
-def sanitize_exif_metadata(exif_data, config):
+def sanitize_exif_metadata(exif_data):
     """Helper function for testing EXIF metadata sanitization."""
     # Create a temporary image file with EXIF data
     import tempfile
