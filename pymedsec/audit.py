@@ -37,7 +37,7 @@ class AuditLogger:
             self._injected_config = None
             self.audit_path = Path(audit_path or config.get_config().audit_path)
             self.audit_secret = config_or_secret or self._get_audit_secret()
-        
+
         self.blockchain_config = blockchain_config
         self.line_count = 0
         self.anchor_interval = 1000  # Rolling anchor every N lines

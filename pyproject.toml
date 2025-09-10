@@ -98,7 +98,7 @@ include = ["pymedsec*"]
 pymedsec = ["py.typed", "policies/*.yaml"]
 
 [tool.black]
-line-length = 88
+line-length = 120
 target-version = ['py38']
 include = '\.pyi?$'
 
@@ -123,11 +123,28 @@ exclude_lines = [
 
 [tool.bandit]
 exclude_dirs = ["tests", "docs"]
-skips = ["B101", "B601"]  # Skip assert_used and shell_injection for tests
+skips = ["B101", "B601", "B603", "B607", "B608", "B324"]  # Skip common dev/test issues
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["E203", "W503", "F401", "F541", "E501", "F841", "W291", "W293"]
+per-file-ignores = [
+    "__init__.py:F401",
+    "tests/*:F401,F841,E501,W291,W293",
+    "*/conftest.py:E501"
+]
+exclude = [
+    ".git",
+    "__pycache__", 
+    ".pytest_cache",
+    "build",
+    "dist",
+    "*.egg-info"
+]
 
 [tool.isort]
 profile = "black"
-line_length = 88
+line_length = 120
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0

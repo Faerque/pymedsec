@@ -85,7 +85,7 @@ def setup_test_environment(tmp_path, monkeypatch):
         # Provide real bytes for HMAC key
         signing_key = b"test_signing_key_32_bytes_long_123"
         mock_security_config_obj.audit_signing_key = signing_key
-        
+
         monkeypatch.setattr(config, '_config', mock_security_config_obj)
         yield
 
