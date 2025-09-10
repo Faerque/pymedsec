@@ -4,7 +4,9 @@
 Simplified audit tests for pymedsec package.
 """
 
-from unittest.mock import MagicMock
+import pytest
+from unittest.mock import MagicMock, patch
+from pymedsec.audit import AuditLogger
 
 
 class TestAuditLogger:
@@ -17,7 +19,6 @@ class TestAuditLogger:
         config.get_security_config.return_value = {"hmac_key": "test_key_123"}
 
         try:
-            from pymedsec.audit import AuditLogger
             logger = AuditLogger(str(log_file), config)
             assert logger is not None
         except:  # noqa: E722
@@ -31,13 +32,8 @@ class TestAuditLogger:
         config.get_security_config.return_value = {"hmac_key": b"test_key_123"}
 
         try:
-            from pymedsec.audit import AuditLogger
             logger = AuditLogger(str(log_file), config)
-            # Try calling the log method with whatever signature it expects
-            if hasattr(logger, 'log_event'):
-                logger.log_event("ENCRYPT")
-            elif hasattr(logger, 'log'):
-                logger.log({"action": "ENCRYPT", "resource": "test.dcm"})
+            logger.log_event("ENCRYPT", {"resource": "test.dcm"})
             assert True  # If we get here, logging worked
         except:  # noqa: E722
             # Accept any error in simplified test

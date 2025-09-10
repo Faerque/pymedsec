@@ -52,13 +52,13 @@ class TestEncryptionFunctions:
         with patch("pymedsec.crypto.get_kms_adapter") as mock_get_kms:
             mock_kms = MockKMSAdapter()
             mock_get_kms.return_value = mock_kms
-            
+
             with patch("pymedsec.crypto.config") as mock_config:
                 mock_config.get_encryption_config.return_value = {
                     "algorithm": "AES-256-GCM",
                     "nonce_size_bits": 96
                 }
-                
+
                 try:
                     encrypt_data(
                         sample_image_data,
@@ -80,9 +80,9 @@ class TestEncryptionFunctions:
             with patch("pymedsec.crypto.get_kms_adapter") as mock_get_kms:
                 mock_kms = MockKMSAdapter()
                 mock_get_kms.return_value = mock_kms
-                
+
                 additional_aad = {"purpose": "research", "study_id": "STUDY-001"}
-                
+
                 encrypt_data(
                     sample_image_data,
                     kms_key_ref="test-key",
@@ -101,12 +101,12 @@ class TestEncryptionFunctions:
         """Test basic data decryption functionality."""
         # Simplified test
         package = EncryptedPackage.from_dict(sample_encrypted_package)
-        
+
         try:
             with patch("pymedsec.crypto.get_kms_adapter") as mock_get_kms:
                 mock_kms = MockKMSAdapter()
                 mock_get_kms.return_value = mock_kms
-                
+
                 decrypt_data(package)
                 assert True
         except:  # noqa: E722
