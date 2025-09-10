@@ -49,31 +49,17 @@ Example:
     >>> pkg = encrypt_blob(clean, kms_client=kms, aad={"dataset": "ds1"})
 """
 
-from .config import load_config
-from .intake import to_tensor
-from .sanitize import sanitize_dicom, sanitize_image
-from .crypto import encrypt_data, decrypt_data
-from . import loader
-from . import validate
-from . import audit
-from . import crypto
-from . import sanitize
-from . import intake
-from . import config
-
 __version__ = "0.1.0"
 __author__ = "Healthcare Security Team"
 __email__ = "security@example.com"
 __license__ = "Apache-2.0"
 
 # Lazy imports for the public API
-
-
 def __getattr__(name):
     """Lazy loading of public API functions to avoid heavy imports at startup."""
     if name in [
         "load_policy",
-        "set_active_policy",
+        "set_active_policy", 
         "get_active_policy",
         "list_policies",
         "scrub_dicom",
@@ -115,14 +101,41 @@ def __getattr__(name):
             }
         )
         return globals()[name]
+    
+    # Legacy imports for backward compatibility
+    if name in ["encrypt_data", "decrypt_data", "sanitize_dicom", "sanitize_image", "to_tensor", "load_config"]:
+        if name == "encrypt_data":
+            from .crypto import encrypt_data
+            return encrypt_data
+        elif name == "decrypt_data":
+            from .crypto import decrypt_data
+            return decrypt_data
+        elif name == "sanitize_dicom":
+            from .sanitize import sanitize_dicom
+            return sanitize_dicom
+        elif name == "sanitize_image":
+            from .sanitize import sanitize_image
+            return sanitize_image
+        elif name == "to_tensor":
+            from .intake import to_tensor
+            return to_tensor
+        elif name == "load_config":
+            from .config import load_config
+            return load_config
+            
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 # For static analysis and IDE support
 __all__ = [
+    "__version__",
+    "__author__", 
+    "__email__",
+    "__license__",
+    # Public API
     "load_policy",
     "set_active_policy",
-    "get_active_policy",
+    "get_active_policy", 
     "list_policies",
     "scrub_dicom",
     "scrub_image",
@@ -131,28 +144,11 @@ __all__ = [
     "decrypt_to_tensor",
     "get_kms_client",
     "SecureImageDataset",
-]
-
-# Package-level imports for internal use
-
-# Main functions for common workflows
-
-__all__ = [
-    "__version__",
-    "__author__",
-    "__email__",
-    "__license__",
-    "config",
-    "intake",
-    "sanitize",
-    "crypto",
-    "audit",
-    "validate",
-    "loader",
+    # Legacy API
     "encrypt_data",
     "decrypt_data",
     "sanitize_dicom",
-    "sanitize_image",
+    "sanitize_image", 
     "to_tensor",
     "load_config",
 ]

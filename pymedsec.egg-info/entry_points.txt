@@ -1,2 +1,0 @@
-[console_scripts]
-pymedsec = pymedsec.cli:main
