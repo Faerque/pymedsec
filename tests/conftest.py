@@ -26,7 +26,7 @@ os.environ.update(TEST_ENV)
 
 
 @pytest.fixture(autouse=True)
-def setup_test_environment(tmp_path):
+def setup_test_environment(tmp_path, monkeypatch):
     """Set up the test environment with required variables."""
     # Create a temporary policy file
     policy_file = tmp_path / "test_policy.yaml"
@@ -72,6 +72,21 @@ def setup_test_environment(tmp_path):
     }
 
     with patch.dict(os.environ, test_env, clear=False):
+        # Mock the config module to avoid global state issues
+        from pymedsec import config
+        mock_security_config_obj = MagicMock()
+        mock_security_config_obj.policy_hash = "test_hash_12345"
+        mock_security_config_obj.audit_path = str(tmp_path / "audit.jsonl")
+        mock_security_config_obj.actor = "test-user"
+        mock_security_config_obj.kms_backend = "mock"
+        mock_security_config_obj.kms_key_ref = "mock-test-key"
+        mock_security_config_obj.allows_plaintext_disk.return_value = True
+        mock_security_config_obj.requires_ocr_redaction.return_value = False
+        # Provide real bytes for HMAC key
+        signing_key = b"test_signing_key_32_bytes_long_123"
+        mock_security_config_obj.audit_signing_key = signing_key
+        
+        monkeypatch.setattr(config, '_config', mock_security_config_obj)
         yield
 
 
@@ -123,6 +138,66 @@ def sample_image_data():
     """Create sample image data for testing."""
     # Simple test data
     return b"test image data for encryption testing"
+
+
+@pytest.fixture
+def mock_config(tmp_path):
+    """Create a mock config for testing - alias for mock_security_config."""
+    config = MagicMock()
+    config.policy_path = str(tmp_path / "test_policy.yaml")
+    config.kms_backend = "mock"
+    config.kms_key_ref = "mock-test-key"
+    config.audit_path = str(tmp_path / "audit.jsonl")
+    config.actor = "test-user"
+    config.policy_hash = "test_hash_12345"
+    config.allows_plaintext_disk.return_value = True
+    config.requires_ocr_redaction.return_value = False
+    # Provide real bytes for HMAC key
+    config.audit_signing_key = b"test_signing_key_32_bytes_long_123"
+
+    config.policy = {
+        "name": "Test Policy",
+        "sanitization": {"dicom": {"remove_private_tags": True}},
+        "encryption": {"algorithm": "AES-256-GCM"},
+        "audit": {"log_all_operations": True},
+        "security": {"allow_plaintext_disk": True}
+    }
+
+    config.get_sanitization_config.return_value = config.policy["sanitization"]
+    config.get_encryption_config.return_value = config.policy["encryption"]
+    config.get_audit_config.return_value = config.policy["audit"]
+
+    return config
+
+
+@pytest.fixture
+def sample_dicom_metadata():
+    """Create sample DICOM metadata for testing."""
+    return {
+        "PatientName": "Test^Patient",
+        "PatientID": "12345",
+        "PatientBirthDate": "19800101",
+        "StudyInstanceUID": "1.2.3.4.5.6.7.8.9.0",
+        "SeriesInstanceUID": "1.2.3.4.5.6.7.8.9.1",
+        "SOPInstanceUID": "1.2.3.4.5.6.7.8.9.2",
+        "Modality": "CT",
+        "StudyDate": "20230101",
+        "SeriesDate": "20230101",
+        "AcquisitionDate": "20230101",
+        "ContentDate": "20230101",
+        "StudyTime": "120000",
+        "SeriesTime": "120000",
+        "AcquisitionTime": "120000",
+        "ContentTime": "120000",
+        "AccessionNumber": "ACC123456",
+        "ReferringPhysicianName": "Dr^Smith",
+        "PerformingPhysicianName": "Dr^Jones",
+        "OperatorsName": "Tech^User",
+        "InstitutionName": "Test Hospital",
+        "InstitutionAddress": "123 Test St, Test City",
+        "StationName": "CT01",
+        "InstitutionalDepartmentName": "Radiology"
+    }
 
 
 @pytest.fixture

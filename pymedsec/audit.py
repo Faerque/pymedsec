@@ -24,9 +24,20 @@ logger = logging.getLogger(__name__)
 class AuditLogger:
     """Tamper-evident audit logger with HMAC signing and blockchain anchoring."""
 
-    def __init__(self, audit_path=None, audit_secret=None, blockchain_config=None):
-        self.audit_path = Path(audit_path or config.get_config().audit_path)
-        self.audit_secret = audit_secret or self._get_audit_secret()
+    def __init__(self, audit_path=None, config_or_secret=None, blockchain_config=None):
+        # Handle both config object and audit_secret for backward compatibility
+        if config_or_secret and hasattr(config_or_secret, 'audit_path'):
+            # It's a config object
+            self._injected_config = config_or_secret
+            self.audit_path = Path(audit_path or config_or_secret.audit_path)
+            audit_secret = getattr(config_or_secret, 'audit_signing_key', None)
+            self.audit_secret = audit_secret or self._get_audit_secret()
+        else:
+            # It's an audit_secret (bytes) or None
+            self._injected_config = None
+            self.audit_path = Path(audit_path or config.get_config().audit_path)
+            self.audit_secret = config_or_secret or self._get_audit_secret()
+        
         self.blockchain_config = blockchain_config
         self.line_count = 0
         self.anchor_interval = 1000  # Rolling anchor every N lines
@@ -268,7 +279,7 @@ class AuditLogger:
     @property
     def config(self):
         """Get the configuration object."""
-        return config.get_config()
+        return self._injected_config or config.get_config()
 
     def verify_integrity(self, start_line=None, end_line=None):
         """Verify HMAC integrity of audit log lines."""
