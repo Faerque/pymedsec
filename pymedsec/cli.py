@@ -445,51 +445,69 @@ def verify_blockchain(ctx, audit_file, details):
         click.echo("Verifying blockchain anchors in audit log...")
 
         verification_result = audit.verify_blockchain_anchors(audit_file)
+        status = verification_result.get("status", "error")
 
         if not verification_result["blockchain_enabled"]:
             click.echo(f"⚠ Blockchain anchoring: {verification_result['message']}")
-            return
+            sys.exit(1)
 
         total = verification_result["total_lines"]
         anchored = verification_result["anchored_lines"]
         verified = verification_result["verified_anchors"]
         failed = verification_result["failed_anchors"]
         rate = verification_result["verification_rate"]
+        backend = verification_result.get("backend", "unknown")
+        anchor_error_lines = verification_result.get("anchor_error_lines", 0)
 
         click.echo(f"📊 Blockchain Anchor Verification Results:")
+        click.echo(f"  Backend: {backend}")
         click.echo(f"  Total audit entries: {total}")
         click.echo(f"  Anchored entries: {anchored}")
         click.echo(f"  Verified anchors: {verified}")
         click.echo(f"  Failed anchors: {failed}")
+        click.echo(f"  Anchor error lines: {anchor_error_lines}")
         click.echo(f"  Verification rate: {rate:.1%}")
 
-        if rate >= 0.95:
+        if status == "passed":
             click.echo("✓ Blockchain anchor verification PASSED")
-        elif rate >= 0.80:
+            exit_code = 0
+        elif status == "partial":
             click.echo("⚠ Blockchain anchor verification PARTIAL")
-        else:
+            exit_code = 2
+        elif status == "failed":
             click.echo("✗ Blockchain anchor verification FAILED")
+            exit_code = 2
+        else:
+            click.echo(f"✗ Blockchain verification ERROR: {verification_result['message']}")
+            exit_code = 1
 
         if details and verification_result["anchor_details"]:
             click.echo("\n🔗 Anchor Details:")
             # Show first 10
             for detail in verification_result["anchor_details"][:10]:
                 status_icon = "✓" if detail["status"] == "verified" else "✗"
+                tx_hash = detail.get("tx_hash") or "no-tx"
+                tx_hash_preview = tx_hash[:16] if isinstance(tx_hash, str) else "no-tx"
                 click.echo(
-                    f"  {status_icon} Line {detail['line']}: {detail['tx_hash'][:16]}..."
+                    f"  {status_icon} Line {detail['line']}: {tx_hash_preview}..."
                 )
                 if detail["status"] == "verified":
                     click.echo(f"    Confirmations: {detail.get('confirmations', 0)}")
-                elif detail["status"] == "error":
-                    click.echo(f"    Error: {detail.get('error', 'Unknown')}")
+                else:
+                    click.echo(f"    Status: {detail.get('status')}")
+                    if detail.get("message"):
+                        click.echo(f"    Message: {detail.get('message')}")
 
             if len(verification_result["anchor_details"]) > 10:
                 remaining = len(verification_result["anchor_details"]) - 10
                 click.echo(f"  ... and {remaining} more anchor(s)")
 
+        sys.exit(exit_code)
+
     except Exception as e:
         click.echo(f"Blockchain verification failed: {e}", err=True)
-        if ctx.obj.get("config", {}).get("debug"):
+        cfg = ctx.obj.get("config")
+        if getattr(cfg, "debug", False):
             import traceback
 
             traceback.print_exc()
@@ -524,8 +542,12 @@ def audit_status(ctx, blockchain):
                 anchored = blockchain_result["anchored_lines"]
                 total = blockchain_result["total_lines"]
                 rate = anchored / max(1, total)
+                status = blockchain_result.get("status", "unknown")
+                backend = blockchain_result.get("backend", "unknown")
 
                 click.echo(f"🔗 Blockchain Anchoring:")
+                click.echo(f"  Backend: {backend}")
+                click.echo(f"  Status: {status}")
                 click.echo(f"  Anchored entries: {anchored}/{total} ({rate:.1%})")
 
                 if blockchain_result["verified_anchors"] > 0:

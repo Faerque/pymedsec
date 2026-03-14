@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pymedsec"
-version = "0.1.0"
+version = "0.2.0"
 description = "HIPAA/GDPR-ready medical image sanitization and encryption library with blockchain audit anchoring"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -73,6 +73,7 @@ all = [
     "boto3>=1.26.0",
     "hvac>=1.0.0",
     "web3>=6.0.0",
+    "fabric-sdk-py",
 ]
 ocr = [
     "pytesseract>=0.3.0",
@@ -83,8 +84,15 @@ aws = [
 vault = [
     "hvac>=1.0.0",
 ]
-blockchain = [
+ethereum = [
     "web3>=6.0.0",
+]
+hyperledger = [
+    "fabric-sdk-py",
+]
+blockchain-all = [
+    "web3>=6.0.0",
+    "fabric-sdk-py",
 ]
 
 [project.scripts]
@@ -116,6 +124,9 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 addopts = "-v --tb=short"
+markers = [
+    "integration: integration tests for backend/network behavior",
+]
 
 [tool.coverage.run]
 source = ["pymedsec"]

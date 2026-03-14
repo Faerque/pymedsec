@@ -42,10 +42,11 @@ class AuditLogger:
         self.line_count = 0
         self.anchor_interval = 1000  # Rolling anchor every N lines
         self.last_anchor_hash = None
+        self.blockchain_backend = os.getenv("IMGSEC_BLOCKCHAIN_BACKEND", "").strip().lower()
+        self.blockchain_frequency = self._get_blockchain_frequency()
 
-        # Initialize blockchain adapter if configured
+        # Initialize blockchain adapter if configured.
         self.blockchain_adapter = self._initialize_blockchain()
-        self.blockchain_frequency = os.getenv("IMGSEC_BLOCKCHAIN_FREQUENCY", "every")
 
         # Ensure audit directory exists
         self.audit_path.parent.mkdir(parents=True, exist_ok=True)
@@ -56,23 +57,46 @@ class AuditLogger:
         else:
             self._load_existing_state()
 
+    @staticmethod
+    def _now_iso():
+        """Return UTC timestamp in ISO-8601 format."""
+        return datetime.now(timezone.utc).isoformat()
+
+    def _get_blockchain_frequency(self):
+        """Get and validate blockchain anchoring frequency."""
+        valid_frequencies = {"every", "batch_hourly"}
+        value = os.getenv("IMGSEC_BLOCKCHAIN_FREQUENCY", "every").strip().lower()
+        if value in valid_frequencies:
+            return value
+
+        logger.warning(
+            "Invalid IMGSEC_BLOCKCHAIN_FREQUENCY=%s. Defaulting to 'every'.",
+            value,
+        )
+        return "every"
+
     def _initialize_blockchain(self):
         """Initialize blockchain adapter if configured."""
         try:
+            if not self.blockchain_backend:
+                return None
+
             # Use blockchain_config if provided
             if self.blockchain_config:
                 from .blockchain import create_blockchain_adapter
 
-                adapter = create_blockchain_adapter(config=self.blockchain_config)
+                adapter = create_blockchain_adapter(
+                    backend=self.blockchain_backend, config=self.blockchain_config
+                )
             else:
                 from .blockchain import create_blockchain_adapter
 
-                adapter = create_blockchain_adapter()
+                adapter = create_blockchain_adapter(backend=self.blockchain_backend)
 
             if adapter:
                 logger.info(
                     "Blockchain anchoring enabled: %s",
-                    os.getenv("IMGSEC_BLOCKCHAIN_BACKEND", "none"),
+                    self.blockchain_backend,
                 )
             return adapter
         except Exception as e:
@@ -128,7 +152,7 @@ class AuditLogger:
 
     def _write_audit_line(self, operation, data):
         """Write a single audit line with HMAC signature and optional blockchain anchoring."""
-        timestamp = datetime.now(timezone.utc).isoformat()
+        timestamp = self._now_iso()
 
         # Build audit entry
         entry = {
@@ -154,16 +178,20 @@ class AuditLogger:
 
         # Optional blockchain anchoring
         blockchain_anchor = None
+        blockchain_anchor_error = None
         if self.blockchain_adapter and self._should_anchor_to_blockchain():
             try:
                 blockchain_anchor = self._anchor_to_blockchain(line_digest, entry)
             except Exception as e:
                 logger.error("Blockchain anchoring failed: %s", e)
                 # Continue without blockchain anchoring to avoid blocking audit logging
+                blockchain_anchor_error = self._build_blockchain_anchor_error(e)
 
         # Add blockchain anchor info if successful
         if blockchain_anchor:
             entry["blockchain_anchor"] = blockchain_anchor
+        elif blockchain_anchor_error:
+            entry["blockchain_anchor_error"] = blockchain_anchor_error
 
         # Final serialization with all components
         final_json = json.dumps(entry, sort_keys=True, separators=(",", ":"))
@@ -184,6 +212,33 @@ class AuditLogger:
         except Exception as e:
             logger.error("Failed to write audit line: %s", e)
             raise
+
+    def _sanitize_error_message(self, err):
+        """Sanitize blockchain error messages for audit safety."""
+        message = str(err).replace("\n", " ").replace("\r", " ").strip()
+        if len(message) > 240:
+            message = message[:240] + "..."
+        return message
+
+    def _is_retryable_error(self, err):
+        """Best-effort retryability classification for anchor failures."""
+        if isinstance(err, (TimeoutError, ConnectionError, OSError)):
+            return True
+
+        err_name = err.__class__.__name__.lower()
+        message = str(err).lower()
+        retryable_tokens = ("timeout", "temporar", "connect", "network", "retry")
+        return any(token in err_name or token in message for token in retryable_tokens)
+
+    def _build_blockchain_anchor_error(self, err):
+        """Build sanitized fail-open blockchain anchor error for audit logs."""
+        return {
+            "backend": self.blockchain_backend or "unknown",
+            "error_code": err.__class__.__name__.upper(),
+            "message": self._sanitize_error_message(err),
+            "retryable": self._is_retryable_error(err),
+            "timestamp": self._now_iso(),
+        }
 
     def _should_anchor_to_blockchain(self):
         """Determine if this audit line should be anchored to blockchain."""
@@ -220,14 +275,17 @@ class AuditLogger:
 
         # Submit to blockchain
         tx_info = self.blockchain_adapter.submit_digest(line_digest, metadata)
+        backend_name = tx_info.get("backend") or self.blockchain_backend or "unknown"
 
         # Return anchor information for audit log
         return {
+            "backend": backend_name,
             "tx_hash": tx_info.get("tx_hash"),
             "digest": f"sha256:{line_digest}",
-            "chain": os.getenv("IMGSEC_BLOCKCHAIN_BACKEND", "unknown"),
+            "chain": backend_name,  # Backward-compatible alias.
             "status": tx_info.get("status", "pending"),
             "block_number": tx_info.get("block_number"),
+            "confirmations": tx_info.get("confirmations", 0),
             "timestamp": tx_info.get("timestamp"),
         }
 
@@ -303,6 +361,10 @@ class AuditLogger:
                 try:
                     entry = json.loads(line.strip())
                     stored_hmac = entry.pop("hmac_sha256", None)
+                    # HMAC is computed before blockchain enrichment, so ignore
+                    # post-signature anchor metadata during recomputation.
+                    entry.pop("blockchain_anchor", None)
+                    entry.pop("blockchain_anchor_error", None)
 
                     if not stored_hmac:
                         verification_results["failed_lines"].append(
@@ -378,25 +440,32 @@ def verify_blockchain_anchors(audit_file_path=None):
         audit_logger = get_audit_logger()
         audit_file_path = audit_logger.audit_path
 
+    backend_name = os.getenv("IMGSEC_BLOCKCHAIN_BACKEND", "").strip().lower()
+    results = {
+        "blockchain_enabled": False,
+        "backend": backend_name or None,
+        "status": "disabled",
+        "message": "Blockchain anchoring not configured",
+        "total_lines": 0,
+        "anchored_lines": 0,
+        "verified_anchors": 0,
+        "failed_anchors": 0,
+        "anchor_error_lines": 0,
+        "verification_rate": 0.0,
+        "anchor_details": [],
+    }
+
     try:
         from .blockchain import create_blockchain_adapter
 
         blockchain_adapter = create_blockchain_adapter()
-
         if not blockchain_adapter:
-            return {
-                "blockchain_enabled": False,
-                "message": "Blockchain anchoring not configured",
-            }
+            return results
 
-        results = {
-            "blockchain_enabled": True,
-            "total_lines": 0,
-            "anchored_lines": 0,
-            "verified_anchors": 0,
-            "failed_anchors": 0,
-            "anchor_details": [],
-        }
+        results["blockchain_enabled"] = True
+        results["backend"] = blockchain_adapter.backend_name
+        results["status"] = "failed"
+        results["message"] = "Blockchain anchor verification completed"
 
         with open(audit_file_path, "r", encoding="utf-8") as f:
             for line_num, line in enumerate(f, 1):
@@ -404,71 +473,113 @@ def verify_blockchain_anchors(audit_file_path=None):
 
                 try:
                     entry = json.loads(line.strip())
-                    blockchain_anchor = entry.get("blockchain_anchor")
-
-                    if blockchain_anchor:
-                        results["anchored_lines"] += 1
-
-                        # Verify blockchain anchor
-                        digest_full = blockchain_anchor.get("digest", "")
-                        if digest_full.startswith("sha256:"):
-                            digest_hex = digest_full[7:]
-                            tx_hash = blockchain_anchor.get("tx_hash")
-
-                            try:
-                                verification = blockchain_adapter.verify_digest(
-                                    digest_hex, tx_hash
-                                )
-
-                                if verification.get("verified"):
-                                    results["verified_anchors"] += 1
-                                    status = "verified"
-                                else:
-                                    results["failed_anchors"] += 1
-                                    status = "not_found"
-
-                                results["anchor_details"].append(
-                                    {
-                                        "line": line_num,
-                                        "tx_hash": tx_hash,
-                                        "digest": digest_hex[:16] + "...",
-                                        "status": status,
-                                        "confirmations": verification.get(
-                                            "confirmations", 0
-                                        ),
-                                    }
-                                )
-
-                            except Exception as e:
-                                results["failed_anchors"] += 1
-                                results["anchor_details"].append(
-                                    {
-                                        "line": line_num,
-                                        "tx_hash": tx_hash,
-                                        "digest": digest_hex[:16] + "...",
-                                        "status": "error",
-                                        "error": str(e),
-                                    }
-                                )
-
                 except Exception as e:
-                    logger.warning("Error processing line %d: %s", line_num, e)
+                    logger.warning("Error parsing line %d: %s", line_num, e)
                     continue
 
-        results["verification_rate"] = results["verified_anchors"] / max(
-            1, results["anchored_lines"]
-        )
+                anchor_error = entry.get("blockchain_anchor_error")
+                if anchor_error:
+                    results["anchor_error_lines"] += 1
+                    results["anchor_details"].append(
+                        {
+                            "line": line_num,
+                            "backend": anchor_error.get("backend", "unknown"),
+                            "tx_hash": None,
+                            "digest": None,
+                            "status": "anchor_error",
+                            "confirmations": 0,
+                            "block_number": None,
+                            "message": anchor_error.get("message", ""),
+                            "error_code": anchor_error.get("error_code"),
+                        }
+                    )
+
+                blockchain_anchor = entry.get("blockchain_anchor")
+                if not blockchain_anchor:
+                    continue
+
+                results["anchored_lines"] += 1
+                digest_full = blockchain_anchor.get("digest", "")
+                tx_hash = blockchain_anchor.get("tx_hash")
+                anchor_backend = blockchain_anchor.get("backend") or blockchain_anchor.get("chain") or results["backend"]
+
+                if not digest_full.startswith("sha256:") or not tx_hash:
+                    results["failed_anchors"] += 1
+                    results["anchor_details"].append(
+                        {
+                            "line": line_num,
+                            "backend": anchor_backend,
+                            "tx_hash": tx_hash,
+                            "digest": digest_full,
+                            "status": "invalid_anchor",
+                            "confirmations": 0,
+                            "block_number": None,
+                            "message": "Invalid anchor format",
+                        }
+                    )
+                    continue
+
+                digest_hex = digest_full[7:]
+                try:
+                    verification = blockchain_adapter.verify_digest(digest_hex, tx_hash)
+                except Exception as e:
+                    verification = {
+                        "verified": False,
+                        "status": "error",
+                        "confirmations": 0,
+                        "block_number": None,
+                        "message": str(e),
+                    }
+
+                verified = bool(verification.get("verified"))
+                detail_status = verification.get("status") or ("verified" if verified else "mismatch")
+                if verified and detail_status == "verified":
+                    results["verified_anchors"] += 1
+                else:
+                    results["failed_anchors"] += 1
+
+                results["anchor_details"].append(
+                    {
+                        "line": line_num,
+                        "backend": verification.get("backend", anchor_backend),
+                        "tx_hash": tx_hash,
+                        "digest": digest_hex[:16] + "...",
+                        "status": detail_status,
+                        "confirmations": verification.get("confirmations", 0),
+                        "block_number": verification.get("block_number"),
+                        "message": verification.get("message"),
+                    }
+                )
+
+        if results["anchored_lines"] > 0:
+            results["verification_rate"] = results["verified_anchors"] / results["anchored_lines"]
+        else:
+            results["verification_rate"] = 0.0
+
+        if results["anchored_lines"] == 0:
+            results["status"] = "failed"
+            results["message"] = "No blockchain anchors found in audit log"
+        elif results["failed_anchors"] == 0:
+            results["status"] = "passed"
+            results["message"] = "All blockchain anchors verified"
+        elif results["verified_anchors"] > 0:
+            results["status"] = "partial"
+            results["message"] = "Some blockchain anchors failed verification"
+        else:
+            results["status"] = "failed"
+            results["message"] = "Blockchain anchor verification failed"
 
         return results
 
     except ImportError:
-        return {
-            "blockchain_enabled": False,
-            "message": "Blockchain module not available",
-        }
+        results["status"] = "error"
+        results["message"] = "Blockchain module not available"
+        return results
     except Exception as e:
         logger.error("Blockchain verification failed: %s", e)
-        return {"blockchain_enabled": False, "message": f"Verification failed: {e}"}
+        results["status"] = "error"
+        results["message"] = f"Verification failed: {e}"
+        return results
 
 
 def get_audit_stats():
@@ -649,6 +760,8 @@ def verify_audit_chain(audit_file_path, config_obj):
 
                     # Extract signature
                     stored_signature = entry.pop("hmac_sha256", None)
+                    entry.pop("blockchain_anchor", None)
+                    entry.pop("blockchain_anchor_error", None)
                     if not stored_signature:
                         return False
 

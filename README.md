@@ -135,7 +135,9 @@ pip install pymedsec[dev,aws,vault,ocr]
 pip install pymedsec[aws]        # AWS KMS support
 pip install pymedsec[vault]      # HashiCorp Vault support
 pip install pymedsec[ocr]        # OCR-based redaction
-pip install pymedsec[blockchain] # Blockchain anchoring
+pip install pymedsec[ethereum]   # Ethereum blockchain backend
+pip install pymedsec[hyperledger] # Hyperledger blockchain backend
+pip install pymedsec[blockchain-all] # All blockchain backends
 ```
 
 ### 30-Second Example
@@ -944,8 +946,9 @@ logger.log_operation("ENCRYPT",
 ```python
 # Enable blockchain anchoring
 import os
-os.environ['BLOCKCHAIN_BACKEND'] = 'ethereum'
-os.environ['ETHEREUM_RPC_URL'] = 'https://mainnet.infura.io/v3/YOUR_KEY'
+import json
+os.environ['IMGSEC_BLOCKCHAIN_BACKEND'] = 'ethereum'
+os.environ['IMGSEC_ETHEREUM_RPC_URL'] = 'https://mainnet.infura.io/v3/YOUR_KEY'
 
 logger = AuditLogger(audit_path="/var/log/audit_blockchain.jsonl")
 
@@ -953,9 +956,12 @@ logger = AuditLogger(audit_path="/var/log/audit_blockchain.jsonl")
 for i in range(1000):
     logger.log_operation("DECRYPT", outcome="success", access_purpose="ml_training")
 
-# Check blockchain anchor
+# Inspect latest blockchain anchor record
+with open(logger.log_file, "r", encoding="utf-8") as f:
+    last_entry = json.loads(f.readlines()[-1])
+anchor = last_entry.get("blockchain_anchor", {})
 print(f"Last anchor hash: {logger.last_anchor_hash}")
-print(f"Blockchain txn: {logger.last_blockchain_txn}")
+print(f"Blockchain txn: {anchor.get('tx_hash')}")
 ```
 
 **Expected Output:**
@@ -1106,12 +1112,14 @@ PyMedSec uses environment variables and YAML configuration files for flexible de
 
 | Variable                     | Description                          | Default         | Required |
 | ---------------------------- | ------------------------------------ | --------------- | -------- |
-| `PYMEDSEC_POLICY`            | Path to YAML policy file             | -               | ✅       |
-| `PYMEDSEC_KMS_BACKEND`       | KMS backend (`aws`\|`vault`\|`mock`) | `mock`          | ✅       |
-| `PYMEDSEC_KMS_KEY_REF`       | KMS key identifier                   | -               | ✅       |
-| `PYMEDSEC_AUDIT_PATH`        | Audit log file path                  | `./audit.jsonl` | -        |
-| `PYMEDSEC_DEBUG`             | Enable debug logging                 | `false`         | -        |
-| `PYMEDSEC_NO_PLAINTEXT_DISK` | Forbid plaintext disk writes         | `false`         | -        |
+| `IMGSEC_POLICY`            | Path to YAML policy file             | -               | ✅       |
+| `IMGSEC_KMS_BACKEND`       | KMS backend (`aws`\|`vault`\|`mock`) | `mock`          | ✅       |
+| `IMGSEC_KMS_KEY_REF`       | KMS key identifier                   | -               | ✅       |
+| `IMGSEC_AUDIT_PATH`        | Audit log file path                  | `./audit.jsonl` | -        |
+| `IMGSEC_DEBUG`             | Enable debug logging                 | `false`         | -        |
+| `IMGSEC_NO_PLAINTEXT_DISK` | Forbid plaintext disk writes         | `false`         | -        |
+| `IMGSEC_BLOCKCHAIN_BACKEND` | Blockchain backend (`mock`\|`ethereum`\|`hyperledger`\|`disabled`) | `disabled` | - |
+| `IMGSEC_BLOCKCHAIN_FREQUENCY` | Anchor cadence (`every`\|`batch_hourly`) | `every` | - |
 
 ### Policy Configuration
 
@@ -1358,10 +1366,10 @@ PyMedSec provides a comprehensive CLI for batch processing and operations:
 
 ```bash
 # Set up environment
-export PYMEDSEC_POLICY=/etc/pymedsec/hipaa_policy.yaml
-export PYMEDSEC_KMS_BACKEND=aws
-export PYMEDSEC_KMS_KEY_REF=alias/medical-images
-export PYMEDSEC_AUDIT_PATH=/var/log/pymedsec/audit.jsonl
+export IMGSEC_POLICY=/etc/pymedsec/hipaa_policy.yaml
+export IMGSEC_KMS_BACKEND=aws
+export IMGSEC_KMS_KEY_REF=alias/medical-images
+export IMGSEC_AUDIT_PATH=/var/log/pymedsec/audit.jsonl
 
 # Sanitize a DICOM file
 pymedsec sanitize-cmd \
@@ -1396,7 +1404,7 @@ pymedsec verify --input secure_001.enc --verbose
 
 # Audit operations
 pymedsec audit-log --last 100 --format table
-pymedsec audit-status --check-blockchain
+pymedsec audit-status --blockchain
 pymedsec audit-verify --start-date 2025-09-01 --end-date 2025-09-09
 ```
 
@@ -1496,9 +1504,9 @@ COPY policies/ /etc/pymedsec/policies/
 COPY config.yaml /etc/pymedsec/config.yaml
 
 # Set environment variables
-ENV PYMEDSEC_POLICY=/etc/pymedsec/policies/production.yaml
-ENV PYMEDSEC_KMS_BACKEND=aws
-ENV PYMEDSEC_AUDIT_PATH=/var/log/pymedsec/audit.jsonl
+ENV IMGSEC_POLICY=/etc/pymedsec/policies/production.yaml
+ENV IMGSEC_KMS_BACKEND=aws
+ENV IMGSEC_AUDIT_PATH=/var/log/pymedsec/audit.jsonl
 
 # Create non-root user
 RUN useradd -m pymedsec
@@ -1533,11 +1541,11 @@ spec:
         - name: pymedsec
           image: your-registry/pymedsec:latest
           env:
-            - name: PYMEDSEC_POLICY
+            - name: IMGSEC_POLICY
               value: /etc/config/policy.yaml
-            - name: PYMEDSEC_KMS_BACKEND
+            - name: IMGSEC_KMS_BACKEND
               value: aws
-            - name: PYMEDSEC_KMS_KEY_REF
+            - name: IMGSEC_KMS_KEY_REF
               valueFrom:
                 secretKeyRef:
                   name: kms-config

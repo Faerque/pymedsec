@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-14
+
+### Changed
+
+- Hardened blockchain adapter contracts across `mock`, `ethereum`, and `hyperledger` backends with normalized return schemas for submit/verify/status operations.
+- Switched blockchain configuration to canonical `IMGSEC_*` environment variables only.
+- Upgraded CLI blockchain verification behavior with normalized status output and explicit exit codes:
+  - `0` passed
+  - `2` partial/failed verification
+  - `1` runtime/configuration error or disabled backend
+- Split blockchain dependency extras:
+  - `ethereum`
+  - `hyperledger`
+  - `blockchain-all`
+
+### Added
+
+- Fail-open blockchain anchor error recording in audit logs via `blockchain_anchor_error` with sanitized fields:
+  - `backend`
+  - `error_code`
+  - `message`
+  - `retryable`
+  - `timestamp`
+- Frequency validation for `IMGSEC_BLOCKCHAIN_FREQUENCY` with secure default fallback.
+- Integration tests for mock, Ethereum, and Hyperledger adapter flows.
+- CI jobs that gate blockchain backend integration checks and upload backend-specific test artifacts.
+
+### Fixed
+
+- Mock blockchain storage race/corruption risk by adding file locking and atomic write semantics.
+- Local test runner reliability (`run_tests.sh`) by using `python3`, strict shell mode, and repo-relative policy paths.
+
+### Migration Notes
+
+- Legacy blockchain environment names are no longer supported:
+  - `BLOCKCHAIN_BACKEND` -> `IMGSEC_BLOCKCHAIN_BACKEND`
+  - `ETHEREUM_RPC_URL` -> `IMGSEC_ETHEREUM_RPC_URL`
+  - `ETHEREUM_PRIVATE_KEY` -> `IMGSEC_ETHEREUM_PRIVATE_KEY`
+  - `ETHEREUM_CONTRACT_ADDRESS` -> `IMGSEC_ETHEREUM_CONTRACT_ADDRESS`
+- For package extras, replace `pymedsec[blockchain]` with `pymedsec[blockchain-all]` (or backend-specific extras).
+
 ## [0.1.0] - 2025-09-07
 
 ### Added

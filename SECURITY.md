@@ -73,9 +73,3 @@ PyMedSec is designed for healthcare environments with strict security requiremen
 - **Key Rotation**: Regular key rotation supported
 - **HSM Support**: Hardware security module integration via KMS
 - **Audit Logging**: All cryptographic operations are logged
-
-## Contact
-
-- **Security Issues**: security@pymedsec.org
-- **General Support**: opensource@pymedsec.org
-- **Documentation**: https://pymedsec.readthedocs.io/security/

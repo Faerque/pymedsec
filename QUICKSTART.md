@@ -28,12 +28,12 @@ Create a KMS key in AWS Console:
 Create `.env` file:
 
 ```env
-PYMEDSEC_KMS_BACKEND=aws
+IMGSEC_KMS_BACKEND=aws
 AWS_PROFILE=your_aws_profile
 AWS_REGION=your_region
-PYMEDSEC_KMS_KEY_REF=alias/pymedsec
-PYMEDSEC_NO_PLAINTEXT_DISK=true
-PYMEDSEC_POLICY=hipaa_default
+IMGSEC_KMS_KEY_REF=alias/pymedsec
+IMGSEC_NO_PLAINTEXT_DISK=true
+IMGSEC_POLICY=hipaa_default
 ```
 
 Configure AWS profile:

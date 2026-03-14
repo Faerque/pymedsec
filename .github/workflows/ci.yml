@@ -50,6 +50,118 @@ jobs:
         run: |
           python -c "import pymedsec; print('Package imported successfully')"
 
+  blockchain-mock-integration:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev,test]
+
+      - name: Run mock integration tests
+        run: |
+          pytest tests/integration/test_blockchain_mock_integration.py -v --tb=short | tee blockchain-mock-integration.log
+
+      - name: Upload mock integration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-blockchain-mock-integration-logs
+          path: blockchain-mock-integration.log
+
+  blockchain-ethereum-integration:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev,test,ethereum]
+
+      - name: Start Ganache
+        run: |
+          docker run --rm -d --name ganache \
+            -p 8545:8545 \
+            trufflesuite/ganache-cli:v6.12.2 \
+            --deterministic --host 0.0.0.0 --port 8545
+
+      - name: Wait for Ganache readiness
+        run: |
+          for i in {1..30}; do
+            if curl -s -X POST http://127.0.0.1:8545 \
+              -H 'Content-Type: application/json' \
+              --data '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' \
+              | grep -q jsonrpc; then
+              echo "Ganache is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Ganache failed to start"
+          docker logs ganache || true
+          exit 1
+
+      - name: Run Ethereum integration tests
+        env:
+          RUN_ETHEREUM_INTEGRATION: '1'
+          IMGSEC_ETHEREUM_RPC_URL: http://127.0.0.1:8545
+          IMGSEC_ETHEREUM_PRIVATE_KEY: 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce036f4a31b8b1f1736f1
+        run: |
+          pytest tests/integration/test_blockchain_ethereum_integration.py -v --tb=short | tee blockchain-ethereum-integration.log
+
+      - name: Stop Ganache
+        if: always()
+        run: docker rm -f ganache || true
+
+      - name: Upload Ethereum integration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-blockchain-ethereum-integration-logs
+          path: blockchain-ethereum-integration.log
+
+  blockchain-hyperledger-integration:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev,test]
+
+      - name: Run Hyperledger integration tests
+        run: |
+          pytest tests/integration/test_blockchain_hyperledger_integration.py -v --tb=short | tee blockchain-hyperledger-integration.log
+
+      - name: Upload Hyperledger integration logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-blockchain-hyperledger-integration-logs
+          path: blockchain-hyperledger-integration.log
+
   security:
     runs-on: ubuntu-latest
     steps:

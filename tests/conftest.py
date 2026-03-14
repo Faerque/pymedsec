@@ -14,7 +14,7 @@ import yaml
 
 # Set up test environment BEFORE any imports
 TEST_ENV = {
-    "IMGSEC_POLICY": str(Path(__file__).parent.parent / "policies" / "hipaa_default.yaml"),
+    "IMGSEC_POLICY": str(Path(__file__).parent.parent / "pymedsec" / "policies" / "hipaa_default.yaml"),
     "IMGSEC_KMS_BACKEND": "mock",
     "IMGSEC_KMS_KEY_REF": "mock-test-key",
     "IMGSEC_AUDIT_PATH": "/tmp/test_audit.jsonl",

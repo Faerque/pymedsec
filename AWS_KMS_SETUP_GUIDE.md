@@ -125,30 +125,30 @@ Create a `.env` file in your project directory:
 
 ```bash
 # AWS KMS Configuration
-PYMEDSEC_KMS_BACKEND=aws
+IMGSEC_KMS_BACKEND=aws
 AWS_PROFILE=pymedseca
 AWS_REGION=ap-south-1
-PYMEDSEC_KMS_KEY_REF=alias/pymedsec
+IMGSEC_KMS_KEY_REF=alias/pymedsec
 
 # Security Settings
-PYMEDSEC_NO_PLAINTEXT_DISK=true
+IMGSEC_NO_PLAINTEXT_DISK=true
 
 # Compliance Policy
-PYMEDSEC_POLICY=hipaa_default
+IMGSEC_POLICY=hipaa_default
 
 # Optional: Blockchain Audit
-BLOCKCHAIN_BACKEND=mock
+IMGSEC_BLOCKCHAIN_BACKEND=mock
 ```
 
 ### Environment Variables Explanation
 
-- **PYMEDSEC_KMS_BACKEND**: KMS backend (`aws`, `mock`, `vault`)
+- **IMGSEC_KMS_BACKEND**: KMS backend (`aws`, `mock`, `vault`)
 - **AWS_PROFILE**: AWS CLI profile name
 - **AWS_REGION**: AWS region where your KMS key exists
-- **PYMEDSEC_KMS_KEY_REF**: KMS key alias or ARN
-- **PYMEDSEC_NO_PLAINTEXT_DISK**: Prevents writing decrypted data to disk
-- **PYMEDSEC_POLICY**: Default compliance policy to use
-- **BLOCKCHAIN_BACKEND**: Blockchain backend for audit trails
+- **IMGSEC_KMS_KEY_REF**: KMS key alias or ARN
+- **IMGSEC_NO_PLAINTEXT_DISK**: Prevents writing decrypted data to disk
+- **IMGSEC_POLICY**: Default compliance policy to use
+- **IMGSEC_BLOCKCHAIN_BACKEND**: Blockchain backend for audit trails
 
 ## Encryption and Decryption
 
@@ -228,8 +228,8 @@ def decrypt_medical_image(encrypted_package_file):
         kms_client=kms_client
     )
 
-    # Save decrypted file (optional - check PYMEDSEC_NO_PLAINTEXT_DISK)
-    if os.getenv('PYMEDSEC_NO_PLAINTEXT_DISK', 'false').lower() != 'true':
+    # Save decrypted file (optional - check IMGSEC_NO_PLAINTEXT_DISK)
+    if os.getenv('IMGSEC_NO_PLAINTEXT_DISK', 'false').lower() != 'true':
         output_file = encrypted_package_file.replace('.encrypted.pkg.json', '.decrypted')
         with open(output_file, 'wb') as f:
             f.write(decrypted_data)
@@ -545,7 +545,7 @@ If you need to test without AWS KMS:
 
 ```python
 # Use mock KMS for development
-os.environ['PYMEDSEC_KMS_BACKEND'] = 'mock'
+os.environ['IMGSEC_KMS_BACKEND'] = 'mock'
 kms_client = get_kms_client(backend='mock')
 ```
 
@@ -622,7 +622,7 @@ if __name__ == "__main__":
 2. **Use IAM roles in production environments**
 3. **Enable CloudTrail for KMS key usage auditing**
 4. **Rotate KMS keys regularly**
-5. **Use `PYMEDSEC_NO_PLAINTEXT_DISK=true` in production**
+5. **Use `IMGSEC_NO_PLAINTEXT_DISK=true` in production**
 6. **Implement proper access controls for encrypted packages**
 7. **Enable blockchain audit trails for compliance**
 

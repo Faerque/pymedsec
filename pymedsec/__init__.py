@@ -50,7 +50,7 @@ Example:
     >>> pkg = encrypt_blob(clean, kms_client=kms, aad={"dataset": "ds1"})
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Healthcare Security Team"
 __email__ = "security@example.com"
 __license__ = "Apache-2.0"

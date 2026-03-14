@@ -1,10 +1,15 @@
 #!/bin/bash
 # run_tests.sh - Test runner script with proper environment isolation
 
+set -euo pipefail
+
+# Resolve repo root from script location.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Set test environment
 export IMGSEC_KMS_BACKEND=mock
 export IMGSEC_KMS_KEY_REF=test-key
-export IMGSEC_POLICY=/mnt/data/pymedsec/policies/hipaa_default.yaml
+export IMGSEC_POLICY="${SCRIPT_DIR}/pymedsec/policies/hipaa_default.yaml"
 export IMGSEC_AUDIT_PATH=/tmp/test_audit.jsonl
 export IMGSEC_ACTOR=test-user
 
@@ -19,11 +24,11 @@ echo ""
 
 # Run specific test files that we know work
 echo "Running KMS tests..."
-python -m pytest tests/test_kms.py::TestMockKMSAdapter -v --tb=short
+python3 -m pytest tests/test_kms.py::TestMockKMSAdapter -v --tb=short
 
 echo ""
 echo "Running basic crypto tests..."
-python -m pytest tests/test_crypto.py::TestEncryptionFunctions::test_encrypt_data_basic -v --tb=short
+python3 -m pytest tests/test_crypto.py::TestEncryptionFunctions::test_encrypt_data_basic -v --tb=short
 
 echo ""
 echo "Test run complete!"

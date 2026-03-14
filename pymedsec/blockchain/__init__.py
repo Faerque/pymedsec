@@ -13,6 +13,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+CANONICAL_BACKEND_ENV = "IMGSEC_BLOCKCHAIN_BACKEND"
+LEGACY_BACKEND_ENV = "BLOCKCHAIN_BACKEND"
+
+
 def create_blockchain_adapter(backend=None, config=None):
     """
     Create a blockchain adapter based on configuration.
@@ -25,13 +29,25 @@ def create_blockchain_adapter(backend=None, config=None):
         Blockchain adapter instance or None if disabled
     """
     if backend is None:
-        backend = os.environ.get("BLOCKCHAIN_BACKEND", "").lower()
+        backend = os.environ.get(CANONICAL_BACKEND_ENV, "").strip().lower()
+        # Hard switch: legacy env variable is intentionally not supported.
+        if not backend and os.environ.get(LEGACY_BACKEND_ENV):
+            logger.warning(
+                "Ignoring legacy %s. Use %s instead.",
+                LEGACY_BACKEND_ENV,
+                CANONICAL_BACKEND_ENV,
+            )
+    else:
+        backend = str(backend).strip().lower()
 
     if not backend or backend == "disabled":
         return None
 
     if config is None:
         config = {}
+    else:
+        config = dict(config)
+    config.setdefault("backend", backend)
 
     try:
         if backend == "ethereum":

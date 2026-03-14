@@ -39,7 +39,7 @@ quickstart
 api/index
 architecture
 compliance/index
-blockchain
+BLOCKCHAIN_AUDIT
 examples
 contributing
 changelog

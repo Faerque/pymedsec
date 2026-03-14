@@ -4,9 +4,10 @@
 Hyperledger Fabric blockchain adapter.
 """
 
-import logging
 import json
-import time
+import logging
+import os
+
 from .base import BlockchainAdapter
 
 # Try to import Hyperledger Fabric SDK
@@ -27,63 +28,107 @@ class HyperledgerBlockchainAdapter(BlockchainAdapter):
     def __init__(self, config=None):
         """Initialize Hyperledger blockchain adapter."""
         super().__init__(config)
+        self.backend_name = "hyperledger"
 
-        # Check if Hyperledger Fabric SDK is available
+        # Check if Hyperledger Fabric SDK is available.
         if not HFC_AVAILABLE:
             raise ImportError(
                 "Hyperledger Fabric Python SDK is required for Hyperledger support. "
                 "Install with: pip install fabric-sdk-py"
             )
 
-        # Initialize Hyperledger Fabric configuration
-        self.network_profile = self.config.get("network_profile", "network.json")
-        self.channel_name = self.config.get("channel_name", "mychannel")
-        self.chaincode_name = self.config.get("chaincode_name", "audit_chaincode")
-        self.org_name = self.config.get("org_name", "Org1MSP")
-        self.peer_name = self.config.get("peer_name", "peer0.org1.example.com")
-        self.user_name = self.config.get("user_name", "Admin")
-        self.user_secret = self.config.get("user_secret", "adminpw")
+        # Canonical blockchain environment variables.
+        self.network_profile = self.config.get(
+            "network_profile",
+            os.environ.get("IMGSEC_HYPERLEDGER_NETWORK_PROFILE", "network.json"),
+        )
+        self.channel_name = self.config.get(
+            "channel_name", os.environ.get("IMGSEC_HYPERLEDGER_CHANNEL", "mychannel")
+        )
+        self.chaincode_name = self.config.get(
+            "chaincode_name",
+            os.environ.get("IMGSEC_HYPERLEDGER_CHAINCODE", "audit_chaincode"),
+        )
+        self.org_name = self.config.get(
+            "org_name", os.environ.get("IMGSEC_HYPERLEDGER_ORG", "Org1MSP")
+        )
+        self.peer_name = self.config.get(
+            "peer_name",
+            os.environ.get("IMGSEC_HYPERLEDGER_PEER", "peer0.org1.example.com"),
+        )
+        self.user_name = self.config.get(
+            "user_name", os.environ.get("IMGSEC_HYPERLEDGER_USER", "Admin")
+        )
+        self.user_secret = self.config.get(
+            "user_secret", os.environ.get("IMGSEC_HYPERLEDGER_SECRET", "")
+        )
 
-        # Initialize client
         try:
             self.client = Hyperledger_Fabric_Client(
                 net_profile=self.network_profile
             )  # type: ignore
-
-            # Get organization and user
             self.org = self.client.get_organization(self.org_name)
             self.user = self.client.get_user(self.org_name, self.user_name)
-
-            # Initialize peer and channel
             self.peer = self.client.get_peer(self.peer_name)
             self.channel = self.client.new_channel(self.channel_name)
 
-            logger.info("Hyperledger Fabric client initialized successfully")
+            if not all([self.client, self.org, self.user, self.peer, self.channel]):
+                raise RuntimeError("Hyperledger adapter missing required client components")
 
-        except Exception as e:
-            logger.warning("Failed to initialize Hyperledger Fabric client: %s", e)
-            # Set to None for graceful degradation
-            self.client = None
-            self.org = None
-            self.user = None
-            self.peer = None
-            self.channel = None
+            logger.info(
+                "Hyperledger Fabric client initialized (channel=%s, chaincode=%s)",
+                self.channel_name,
+                self.chaincode_name,
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to initialize Hyperledger client: {exc}"
+            ) from exc
+
+    @staticmethod
+    def _normalize_response(response):
+        """Normalize SDK response payload into a dictionary."""
+        if response is None:
+            return {}
+
+        if isinstance(response, (list, tuple)):
+            if not response:
+                return {}
+            response = response[0]
+
+        if isinstance(response, bytes):
+            response = response.decode("utf-8", errors="replace")
+
+        if isinstance(response, str):
+            response = response.strip()
+            if not response:
+                return {}
+            try:
+                return json.loads(response)
+            except json.JSONDecodeError:
+                return {"raw": response}
+
+        if isinstance(response, dict):
+            return response
+
+        return {"raw": str(response)}
+
+    @staticmethod
+    def _extract_tx_hash(payload):
+        """Extract transaction hash from heterogeneous Fabric SDK payloads."""
+        for key in ("tx_hash", "tx_id", "transaction_id", "id"):
+            value = payload.get(key)
+            if value:
+                return str(value)
+        return None
 
     def submit_digest(self, digest, metadata=None):
         """Submit digest to Hyperledger Fabric blockchain."""
-        if not self.client:
-            raise RuntimeError("Hyperledger Fabric client not initialized")
-
         if not self.validate_digest(digest):
             raise ValueError("Invalid digest format")
 
         try:
-            # Prepare chaincode arguments
-            args = [digest]
-            if metadata:
-                args.append(json.dumps(metadata))
-
-            # Invoke chaincode to submit digest
+            args = [digest, json.dumps(metadata or {}, sort_keys=True, separators=(",", ":"))]
             response = self.client.chaincode_invoke(
                 requestor=self.user,
                 channel_name=self.channel_name,
@@ -92,31 +137,33 @@ class HyperledgerBlockchainAdapter(BlockchainAdapter):
                 cc_name=self.chaincode_name,
                 fcn="submitDigest",
             )
+            payload = self._normalize_response(response)
+            tx_hash = self._extract_tx_hash(payload)
+            if not tx_hash:
+                raise RuntimeError(f"Missing tx identifier in invoke response: {payload}")
 
-            # Extract transaction ID
-            tx_id = response.get("tx_id")
-            if not tx_id:
-                raise RuntimeError("Failed to get transaction ID from response")
-
-            return {
-                "tx_hash": tx_id,
-                "status": "submitted",
-                "timestamp": time.time(),
-                "channel": self.channel_name,
-                "chaincode": self.chaincode_name,
-            }
-
-        except Exception as e:
-            logger.error("Failed to submit digest to Hyperledger Fabric: %s", e)
+            return self._build_submit_result(
+                tx_hash=tx_hash,
+                digest=digest,
+                status="submitted",
+                message="Digest submitted to Hyperledger",
+            )
+        except Exception as exc:
+            logger.error("Failed to submit digest to Hyperledger Fabric: %s", exc)
             raise
 
     def verify_digest(self, digest_hex, tx_hash):
         """Verify digest in Hyperledger Fabric blockchain."""
-        if not self.client:
-            raise RuntimeError("Hyperledger Fabric client not initialized")
+        if not self.validate_digest(digest_hex):
+            return self._build_verify_result(
+                tx_hash=tx_hash,
+                digest=digest_hex,
+                verified=False,
+                status="invalid_digest",
+                message="Invalid digest format",
+            )
 
         try:
-            # Query chaincode to verify digest
             response = self.client.chaincode_query(
                 requestor=self.user,
                 channel_name=self.channel_name,
@@ -125,83 +172,77 @@ class HyperledgerBlockchainAdapter(BlockchainAdapter):
                 cc_name=self.chaincode_name,
                 fcn="verifyDigest",
             )
+            payload = self._normalize_response(response)
+            verified = bool(payload.get("verified", False))
+            status = payload.get("status")
+            if status not in {"verified", "not_found", "mismatch", "pending", "error"}:
+                status = "verified" if verified else "mismatch"
 
-            # Parse response
-            if response and isinstance(response, str):
-                result = json.loads(response)
-                return {
-                    "verified": result.get("verified", False),
-                    "tx_hash": tx_hash,
-                    "digest": digest_hex,
-                    "timestamp": result.get("timestamp"),
-                    "block_number": result.get("block_number"),
-                    "message": result.get("message", "Verification completed"),
-                }
-            else:
-                return {
-                    "verified": False,
-                    "tx_hash": tx_hash,
-                    "digest": digest_hex,
-                    "message": "Invalid response from chaincode",
-                }
+            confirmations = int(payload.get("confirmations", 0) or 0)
+            block_number = payload.get("block_number")
 
-        except Exception as e:
-            logger.error("Failed to verify digest: %s", e)
-            return {
-                "verified": False,
-                "tx_hash": tx_hash,
-                "digest": digest_hex,
-                "message": f"Verification error: {e}",
-            }
+            return self._build_verify_result(
+                tx_hash=tx_hash,
+                digest=digest_hex,
+                verified=verified,
+                status=status,
+                block_number=block_number,
+                confirmations=confirmations,
+                message=payload.get("message", "Verification completed"),
+                timestamp=payload.get("timestamp"),
+            )
+        except Exception as exc:
+            logger.error("Failed to verify Hyperledger digest: %s", exc)
+            return self._build_verify_result(
+                tx_hash=tx_hash,
+                digest=digest_hex,
+                verified=False,
+                status="error",
+                message=str(exc),
+            )
 
     def get_transaction_status(self, tx_hash):
         """Get Hyperledger Fabric transaction status."""
-        if not self.client:
-            raise RuntimeError("Hyperledger Fabric client not initialized")
-
         try:
-            # Query transaction by ID
-            transaction = self.client.query_transaction(
+            response = self.client.query_transaction(
                 requestor=self.user,
                 channel_name=self.channel_name,
                 peers=[self.peer],
                 tx_id=tx_hash,
             )
+            payload = self._normalize_response(response)
+            if not payload:
+                return self._build_transaction_status(
+                    tx_hash=tx_hash,
+                    found=False,
+                    status="not_found",
+                    message="Transaction not found",
+                )
 
-            if transaction:
-                return {
-                    "tx_hash": tx_hash,
-                    "status": "confirmed",
-                    "valid": transaction.get("valid", False),
-                    "timestamp": transaction.get("timestamp"),
-                    "block_number": transaction.get("block_number"),
-                    "channel": self.channel_name,
-                }
-            else:
-                return {
-                    "tx_hash": tx_hash,
-                    "status": "not_found",
-                    "valid": False,
-                    "message": "Transaction not found",
-                }
+            found = bool(payload.get("found", True))
+            status = payload.get("status")
+            if not status:
+                if payload.get("valid") is False:
+                    status = "failed"
+                elif payload.get("block_number") is not None:
+                    status = "confirmed"
+                else:
+                    status = "pending"
 
-        except Exception as e:
-            logger.error("Failed to get transaction status: %s", e)
-            return {
-                "tx_hash": tx_hash,
-                "status": "error",
-                "valid": False,
-                "message": f"Status check error: {e}",
-            }
-
-    def validate_digest(self, digest_hex):
-        """Validate digest format (SHA-256 hex string)."""
-        if not isinstance(digest_hex, str):
-            return False
-        if len(digest_hex) != 64:
-            return False
-        try:
-            int(digest_hex, 16)
-            return True
-        except ValueError:
-            return False
+            return self._build_transaction_status(
+                tx_hash=tx_hash,
+                found=found,
+                status=status,
+                block_number=payload.get("block_number"),
+                confirmations=int(payload.get("confirmations", 0) or 0),
+                message=payload.get("message"),
+                timestamp=payload.get("timestamp"),
+            )
+        except Exception as exc:
+            logger.error("Failed to get Hyperledger transaction status: %s", exc)
+            return self._build_transaction_status(
+                tx_hash=tx_hash,
+                found=False,
+                status="error",
+                message=str(exc),
+            )

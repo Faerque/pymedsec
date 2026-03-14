@@ -15,8 +15,8 @@ sys.path.insert(0, str(project_root))
 project = "PyMedSec"
 project_copyright = "2025, PyMedSec Contributors"
 author = "PyMedSec Development Team"
-release = "0.1.0"
-version = "0.1.0"
+release = "0.2.0"
+version = "0.2.0"
 
 # -- General configuration ---------------------------------------------------
 extensions = [
