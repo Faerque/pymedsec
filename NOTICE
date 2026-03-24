@@ -80,7 +80,8 @@ This software handles sensitive healthcare data. Users are strongly advised to:
 4. Implement proper access controls and monitoring
 5. Report security vulnerabilities responsibly
 
-For security issues, please contact: security@pymedsec.org
+For security issues, use private reporting:
+https://github.com/Faerque/pymedsec/security/advisories/new
 
 ================================================================================
 

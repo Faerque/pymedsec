@@ -9,10 +9,10 @@ description = "HIPAA/GDPR-ready medical image sanitization and encryption librar
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "PyMedSec Contributors", email = "opensource@pymedsec.org"}
+    {name = "Muhammad Omar Faruk"}
 ]
 maintainers = [
-    {name = "PyMedSec Development Team", email = "dev@pymedsec.org"}
+    {name = "Muhammad Omar Faruk"}
 ]
 keywords = ["medical", "imaging", "security", "hipaa", "gdpr", "encryption", "dicom", "blockchain"]
 classifiers = [

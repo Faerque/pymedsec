@@ -112,8 +112,8 @@ jobs:
       - name: Run Ethereum integration tests
         env:
           RUN_ETHEREUM_INTEGRATION: '1'
-          IMGSEC_ETHEREUM_RPC_URL: http://127.0.0.1:8545
-          IMGSEC_ETHEREUM_PRIVATE_KEY: 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce036f4a31b8b1f1736f1
+          IMGSEC_ETHEREUM_RPC_URL: 'http://127.0.0.1:8545'
+          IMGSEC_ETHEREUM_PRIVATE_KEY: '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce036f4a31b8b1f1736f1'
         run: |
           pytest tests/integration/test_blockchain_ethereum_integration.py -v --tb=short | tee blockchain-ethereum-integration.log
 

@@ -1607,9 +1607,9 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ### Security Vulnerability Reporting
 
-If you discover a security vulnerability, please report it responsibly:
+If you discover a security vulnerability, please report it privately:
 
-- **Email**: Send details to security@pymedsec.org (not a real email - replace with actual contact)
+- **Private Report**: [GitHub Private Vulnerability Reporting](https://github.com/Faerque/pymedsec/security/advisories/new)
 - **Do NOT** create public GitHub issues for security vulnerabilities
 - **Include**: Description, reproduction steps, and potential impact
 - **Response**: We aim to acknowledge reports within 24 hours

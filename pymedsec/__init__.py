@@ -51,8 +51,8 @@ Example:
 """
 
 __version__ = "0.2.0"
-__author__ = "Healthcare Security Team"
-__email__ = "security@example.com"
+__author__ = "Muhammad Omar Faruk"
+__email__ = ""
 __license__ = "Apache-2.0"
 
 # Lazy imports for the public API

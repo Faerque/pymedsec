@@ -16,7 +16,7 @@ PyMedSec handles sensitive medical data and security vulnerabilities could impac
 
 ### How to Report
 
-**Email**: security@pymedsec.org
+**Private Report**: https://github.com/Faerque/pymedsec/security/advisories/new
 
 **Include the following information:**
 

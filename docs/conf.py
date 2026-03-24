@@ -13,8 +13,8 @@ sys.path.insert(0, str(project_root))
 
 # -- Project information -----------------------------------------------------
 project = "PyMedSec"
-project_copyright = "2025, PyMedSec Contributors"
-author = "PyMedSec Development Team"
+project_copyright = "2025, Muhammad Omar Faruk"
+author = "Muhammad Omar Faruk"
 release = "0.2.0"
 version = "0.2.0"
 

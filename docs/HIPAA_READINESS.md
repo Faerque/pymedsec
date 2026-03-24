@@ -237,10 +237,10 @@ encrypted_package = crypto.encrypt_data(plaintext_data, ...)
 
 ## Contact Information
 
-For HIPAA compliance questions or security reviews, contact:
+For HIPAA compliance questions or security reviews, use:
 
-- Security Team: security@example.com
-- Compliance Officer: compliance@example.com
+- Security reports (private): https://github.com/Faerque/pymedsec/security/advisories/new
+- General questions: https://github.com/Faerque/pymedsec/discussions
 
 ---
 
