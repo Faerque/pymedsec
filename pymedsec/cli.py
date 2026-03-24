@@ -18,7 +18,7 @@
 Command-line interface for healthcare image security operations.
 
 Provides CLI commands for sanitize, encrypt, decrypt, and verify operations
-with comprehensive error handling and policy compliance.
+with clear error handling and policy compliance checks.
 """
 
 import sys
@@ -56,10 +56,10 @@ def main(ctx, debug, config_check):
 
         if config_check:
             click.echo("Configuration validation:")
-            click.echo(f"✓ Policy loaded: {cfg.policy.get('name', 'Unknown')}")
-            click.echo(f"✓ KMS backend: {cfg.kms_backend}")
-            click.echo(f"✓ Audit path: {cfg.audit_path}")
-            click.echo(f"✓ Policy hash: {cfg.policy_hash[:16]}...")
+            click.echo(f"PASS: Policy loaded: {cfg.policy.get('name', 'Unknown')}")
+            click.echo(f"PASS: KMS backend: {cfg.kms_backend}")
+            click.echo(f"PASS: Audit path: {cfg.audit_path}")
+            click.echo(f"PASS: Policy hash: {cfg.policy_hash[:16]}...")
 
             # Test KMS connectivity
             try:
@@ -67,9 +67,9 @@ def main(ctx, debug, config_check):
 
                 kms_adapter = get_kms_adapter()
                 kms_accessible = kms_adapter.verify_key_access(cfg.kms_key_ref)
-                click.echo(f"✓ KMS accessible: {kms_accessible}")
+                click.echo(f"PASS: KMS accessible: {kms_accessible}")
             except Exception as e:
-                click.echo(f"✗ KMS error: {e}")
+                click.echo(f"FAIL: KMS error: {e}")
 
             sys.exit(0)
 
@@ -312,9 +312,9 @@ def verify(ctx, input_path, verbose):
         verification_result = crypto.verify_package_integrity(encrypted_package)
 
         if verification_result["is_valid"]:
-            click.echo("✓ Package integrity verification PASSED")
+            click.echo("PASS: Package integrity verification PASSED")
         else:
-            click.echo("✗ Package integrity verification FAILED")
+            click.echo("FAIL: Package integrity verification FAILED")
             for error in verification_result["errors"]:
                 click.echo(f"  Error: {error}")
 
@@ -343,9 +343,9 @@ def verify(ctx, input_path, verbose):
         compliance_result = validate.validate_policy_compliance(aad)
 
         if compliance_result["is_compliant"]:
-            click.echo("✓ Policy compliance verification PASSED")
+            click.echo("PASS: Policy compliance verification PASSED")
         else:
-            click.echo("✗ Policy compliance verification FAILED")
+            click.echo("FAIL: Policy compliance verification FAILED")
             for violation in compliance_result["violations"]:
                 click.echo(f"  Violation: {violation}")
 
@@ -358,10 +358,10 @@ def verify(ctx, input_path, verbose):
         )
 
         if overall_valid:
-            click.echo("\n✓ Overall verification: PASSED")
+            click.echo("\nPASS: Overall verification: PASSED")
             sys.exit(0)
         else:
-            click.echo("\n✗ Overall verification: FAILED")
+            click.echo("\nFAIL: Overall verification: FAILED")
             sys.exit(1)
 
     except Exception as e:
@@ -417,10 +417,10 @@ def audit_verify(ctx, verify):
             verification_result = audit.verify_audit_integrity()
 
             if verification_result["is_valid"]:
-                click.echo("✓ Audit log integrity verification PASSED")
+                click.echo("PASS: Audit log integrity verification PASSED")
                 click.echo(f"  Verified lines: {verification_result['verified_lines']}")
             else:
-                click.echo("✗ Audit log integrity verification FAILED")
+                click.echo("FAIL: Audit log integrity verification FAILED")
                 click.echo(
                     f"  Failed lines: {len(verification_result['failed_lines'])}"
                 )
@@ -448,7 +448,7 @@ def verify_blockchain(ctx, audit_file, details):
         status = verification_result.get("status", "error")
 
         if not verification_result["blockchain_enabled"]:
-            click.echo(f"⚠ Blockchain anchoring: {verification_result['message']}")
+            click.echo(f"WARNING: Blockchain anchoring: {verification_result['message']}")
             sys.exit(1)
 
         total = verification_result["total_lines"]
@@ -459,7 +459,7 @@ def verify_blockchain(ctx, audit_file, details):
         backend = verification_result.get("backend", "unknown")
         anchor_error_lines = verification_result.get("anchor_error_lines", 0)
 
-        click.echo(f"📊 Blockchain Anchor Verification Results:")
+        click.echo("Blockchain Anchor Verification Results:")
         click.echo(f"  Backend: {backend}")
         click.echo(f"  Total audit entries: {total}")
         click.echo(f"  Anchored entries: {anchored}")
@@ -469,23 +469,23 @@ def verify_blockchain(ctx, audit_file, details):
         click.echo(f"  Verification rate: {rate:.1%}")
 
         if status == "passed":
-            click.echo("✓ Blockchain anchor verification PASSED")
+            click.echo("PASS: Blockchain anchor verification PASSED")
             exit_code = 0
         elif status == "partial":
-            click.echo("⚠ Blockchain anchor verification PARTIAL")
+            click.echo("WARNING: Blockchain anchor verification PARTIAL")
             exit_code = 2
         elif status == "failed":
-            click.echo("✗ Blockchain anchor verification FAILED")
+            click.echo("FAIL: Blockchain anchor verification FAILED")
             exit_code = 2
         else:
-            click.echo(f"✗ Blockchain verification ERROR: {verification_result['message']}")
+            click.echo(f"FAIL: Blockchain verification ERROR: {verification_result['message']}")
             exit_code = 1
 
         if details and verification_result["anchor_details"]:
-            click.echo("\n🔗 Anchor Details:")
+            click.echo("\nAnchor Details:")
             # Show first 10
             for detail in verification_result["anchor_details"][:10]:
-                status_icon = "✓" if detail["status"] == "verified" else "✗"
+                status_icon = "PASS" if detail["status"] == "verified" else "FAIL"
                 tx_hash = detail.get("tx_hash") or "no-tx"
                 tx_hash_preview = tx_hash[:16] if isinstance(tx_hash, str) else "no-tx"
                 click.echo(
@@ -526,10 +526,10 @@ def audit_status(ctx, blockchain):
         verification_result = audit.verify_audit_integrity()
 
         if verification_result["is_valid"]:
-            click.echo("✓ Audit log integrity verification PASSED")
+            click.echo("PASS: Audit log integrity verification PASSED")
             click.echo(f"  Verified lines: {verification_result['verified_lines']}")
         else:
-            click.echo("✗ Audit log integrity verification FAILED")
+            click.echo("FAIL: Audit log integrity verification FAILED")
             click.echo(f"  Failed lines: {len(verification_result['failed_lines'])}")
             for failure in verification_result["failed_lines"]:
                 click.echo(f"    Line {failure['line']}: {failure['error']}")
@@ -545,7 +545,7 @@ def audit_status(ctx, blockchain):
                 status = blockchain_result.get("status", "unknown")
                 backend = blockchain_result.get("backend", "unknown")
 
-                click.echo(f"🔗 Blockchain Anchoring:")
+                click.echo("Blockchain Anchoring:")
                 click.echo(f"  Backend: {backend}")
                 click.echo(f"  Status: {status}")
                 click.echo(f"  Anchored entries: {anchored}/{total} ({rate:.1%})")
@@ -554,7 +554,7 @@ def audit_status(ctx, blockchain):
                     verify_rate = blockchain_result["verification_rate"]
                     click.echo(f"  Verification rate: {verify_rate:.1%}")
             else:
-                click.echo(f"🔗 Blockchain: {blockchain_result['message']}")
+                click.echo(f"Blockchain: {blockchain_result['message']}")
 
     except Exception as e:
         click.echo(f"Audit status check failed: {e}", err=True)

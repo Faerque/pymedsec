@@ -150,7 +150,7 @@ This project follows semantic versioning:
 
 ### Security Updates
 
-Security-related changes are marked with 🔒 and detailed in our security documentation.
+Security-related changes are highlighted in release notes and detailed in the security documentation.
 
 ### Breaking Changes
 

@@ -9,36 +9,36 @@
 [![Coverage](https://codecov.io/gh/Faerque/pymedsec/branch/main/graph/badge.svg)](https://codecov.io/gh/Faerque/pymedsec)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://pymedsec.readthedocs.io/)
 
-**Enterprise-Grade Medical Image Security & Compliance Framework**
+**Medical Image Security and Compliance Library**
 
-_Secure medical image processing with HIPAA/GDPR/GxP compliance, envelope encryption, PHI sanitization, and tamper-evident audit logging_
+_Secure medical image processing with policy-driven sanitization, encryption, and audit logging._
 
-[🚀 Quick Start](#-quick-start) •
-[📖 Documentation](#-documentation) •
-[🏗️ Architecture](#-architecture) •
-[🔧 Examples](#-examples) •
-[🏥 Compliance](#-compliance)
+[Quick Start](#quick-start) •
+[Documentation](#api-documentation) •
+[Architecture](#architecture) •
+[Examples](#examples) •
+[Compliance](#compliance)
 
 </div>
 
 ---
 
-## 🎯 Overview
+## Overview
 
-PyMedSec is a production-ready Python framework designed for secure medical image processing in healthcare environments. It provides comprehensive tools for encryption, sanitization, and compliance management while maintaining the highest security standards for Protected Health Information (PHI).
+PyMedSec is a Python library for secure medical image processing in healthcare environments. It provides policy-driven sanitization, encryption, and audit logging for protected health information (PHI) workflows.
 
-### ✅ Production Ready Features
+### Core Features
 
-- **🔒 Enterprise Encryption**: AES-256-GCM envelope encryption with KMS integration
-- **🧹 PHI Sanitization**: Intelligent DICOM/EXIF metadata removal and de-identification
-- **📊 Audit Compliance**: Tamper-evident logging with HMAC signatures and blockchain anchoring
-- **⚡ ML Integration**: Zero-copy memory decryption for secure machine learning workflows
-- **🔌 Multi-Cloud KMS**: AWS KMS, HashiCorp Vault, and Azure Key Vault support
-- **📋 Regulatory Compliance**: HIPAA, GDPR, CLIA, and GxP alignment with validation documentation
+- **Envelope Encryption**: AES-256-GCM encryption with KMS integration
+- **PHI Sanitization**: DICOM/EXIF metadata removal and de-identification
+- **Audit Logging**: Tamper-evident logs with optional blockchain anchoring
+- **ML Integration**: Memory-only decryption for ML workflows
+- **KMS Backends**: AWS KMS, HashiCorp Vault, and mock backends
+- **Compliance Alignment**: HIPAA, GDPR, CLIA, and GxP support documentation
 
-## �️ Architecture
+## Architecture
 
-PyMedSec follows a modular, security-first architecture designed for enterprise healthcare environments.
+PyMedSec uses a modular architecture focused on security and traceability.
 
 ### System Architecture
 
@@ -120,7 +120,7 @@ PyMedSec follows a modular, security-first architecture designed for enterprise 
                   └─────────────────┘   └─────────────────┘   └─────────────────┘
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -166,10 +166,10 @@ encrypted_package = encrypt_blob(
 with open("secure_scan.enc", "w") as f:
     f.write(encrypted_package.to_json())
 
-print("✅ Medical image securely processed and encrypted!")
+print("Medical image securely processed and encrypted.")
 ```
 
-## 📖 API Documentation
+## API Documentation
 
 ### High-Level API (Recommended)
 
@@ -290,7 +290,7 @@ logger = AuditLogger(audit_path="/var/log/pymedsec.jsonl")
 logger.log_operation("ENCRYPT", outcome="success", file_hash="sha256:abc123...")
 ```
 
-## � Expected Outputs & Policy Examples
+## Expected Outputs & Policy Examples
 
 This section shows what to expect when using different policies and operations with PyMedSec.
 
@@ -990,26 +990,26 @@ pymedsec sanitize-cmd \
 **Expected CLI Output:**
 
 ```
-🏥 PyMedSec Medical Image Sanitizer
+PyMedSec Medical Image Sanitizer
 =====================================
-📁 Input: patient_001.dcm (2.85 MB)
-📋 Policy: HIPAA Default Policy
-🔒 Pseudo PID: STUDY001_001
+Input: patient_001.dcm (2.85 MB)
+Policy: HIPAA Default Policy
+Pseudo PID: STUDY001_001
 
-📊 Sanitization Progress:
-  ✅ Loaded DICOM dataset (512x512x16bit)
-  ✅ Removed 23 PHI tags
-  ✅ Regenerated 4 UIDs
-  ✅ Preserved 156 technical tags
-  ✅ Applied date shifting (+45 days)
-  ⚠️  Detected burned-in annotation (handled)
+Sanitization Progress:
+  Loaded DICOM dataset (512x512x16bit)
+  Removed 23 PHI tags
+  Regenerated 4 UIDs
+  Preserved 156 technical tags
+  Applied date shifting (+45 days)
+  Detected burned-in annotation (handled)
 
-💾 Output: clean_001.dcm (2.83 MB)
-📈 Size reduction: 1.2%
-🔐 Compliance hash: sha256:f4a7b2c9...
-⏱️  Processing time: 0.234 seconds
+Output: clean_001.dcm (2.83 MB)
+Size reduction: 1.2%
+Compliance hash: sha256:f4a7b2c9...
+Processing time: 0.234 seconds
 
-✅ Sanitization completed successfully!
+Sanitization completed successfully.
 ```
 
 #### Encryption Command
@@ -1027,36 +1027,36 @@ pymedsec encrypt \
 **Expected CLI Output:**
 
 ```
-🔐 PyMedSec Medical Image Encryptor
+PyMedSec Medical Image Encryptor
 ====================================
-📁 Input: clean_001.dcm (2.83 MB)
-🔑 KMS: AWS KMS (us-east-1)
-🏷️  Key: alias/medical-images
-📊 Dataset: CLINICAL_TRIAL_2025
+Input: clean_001.dcm (2.83 MB)
+KMS: AWS KMS (us-east-1)
+Key: alias/medical-images
+Dataset: CLINICAL_TRIAL_2025
 
-🔒 Encryption Progress:
-  ✅ Generated 256-bit data key
-  ✅ Encrypted with AES-256-GCM
-  ✅ Wrapped DEK with KMS
-  ✅ Created tamper-evident package
-  ✅ Logged to audit trail
+Encryption Progress:
+  Generated 256-bit data key
+  Encrypted with AES-256-GCM
+  Wrapped DEK with KMS
+  Created tamper-evident package
+  Logged to audit trail
 
-💾 Output: secure_001.enc (2.86 MB)
-🔐 Package hash: sha256:1a2b3c4d...
-📜 Audit entry: 2025-09-09T14:30:15.123Z
-⏱️  Processing time: 0.892 seconds
+Output: secure_001.enc (2.86 MB)
+Package hash: sha256:1a2b3c4d...
+Audit entry: 2025-09-09T14:30:15.123Z
+Processing time: 0.892 seconds
 
-✅ Encryption completed successfully!
+Encryption completed successfully.
 ```
 
 ### Policy Comparison Table
 
 | Feature              | HIPAA Default | GDPR Default | GxP Default | Custom Lab   |
 | -------------------- | ------------- | ------------ | ----------- | ------------ |
-| **PHI Removal**      | ✅ Complete   | ✅ Complete  | ✅ Complete | ⚠️ Selective |
-| **UID Regeneration** | ✅ Yes        | ✅ Yes       | ✅ Yes      | ❌ No        |
-| **Date Shifting**    | ✅ ±90 days   | ✅ ±90 days  | ❌ Preserve | ✅ ±30 days  |
-| **Technical Tags**   | ✅ Preserve   | ✅ Preserve  | ✅ Preserve | ✅ Preserve  |
+| **PHI Removal**      | Complete   | Complete  | Complete | Selective |
+| **UID Regeneration** | Yes        | Yes       | Yes      | No        |
+| **Date Shifting**    | 90 days    | 90 days   | Preserve | 30 days   |
+| **Technical Tags**   | Preserve   | Preserve  | Preserve | Preserve  |
 | **Audit Retention**  | 7 years       | 6 years      | 15 years    | 2 years      |
 | **Encryption**       | AES-256-GCM   | AES-256-GCM  | AES-256-GCM | AES-256-GCM  |
 | **Blockchain**       | Optional      | Optional     | Required    | Disabled     |
@@ -1104,7 +1104,7 @@ Suggested actions:
   3. Ensure key is enabled and not deleted
 ```
 
-## �🔧 Configuration
+## Configuration
 
 PyMedSec uses environment variables and YAML configuration files for flexible deployment.
 
@@ -1112,9 +1112,9 @@ PyMedSec uses environment variables and YAML configuration files for flexible de
 
 | Variable                     | Description                          | Default         | Required |
 | ---------------------------- | ------------------------------------ | --------------- | -------- |
-| `IMGSEC_POLICY`            | Path to YAML policy file             | -               | ✅       |
-| `IMGSEC_KMS_BACKEND`       | KMS backend (`aws`\|`vault`\|`mock`) | `mock`          | ✅       |
-| `IMGSEC_KMS_KEY_REF`       | KMS key identifier                   | -               | ✅       |
+| `IMGSEC_POLICY`            | Path to YAML policy file             | -               | Yes      |
+| `IMGSEC_KMS_BACKEND`       | KMS backend (`aws`\|`vault`\|`mock`) | `mock`          | Yes      |
+| `IMGSEC_KMS_KEY_REF`       | KMS key identifier                   | -               | Yes      |
 | `IMGSEC_AUDIT_PATH`        | Audit log file path                  | `./audit.jsonl` | -        |
 | `IMGSEC_DEBUG`             | Enable debug logging                 | `false`         | -        |
 | `IMGSEC_NO_PLAINTEXT_DISK` | Forbid plaintext disk writes         | `false`         | -        |
@@ -1163,7 +1163,7 @@ compliance:
   pseudonymization_required: true
 ```
 
-## 🔐 Security Model
+## Security Model
 
 ### Envelope Encryption
 
@@ -1237,18 +1237,18 @@ Tamper-evident audit logging with HMAC signatures and optional blockchain anchor
 {"timestamp": "2025-09-09T10:31:22.456Z", "actor": "ml-pipeline", "operation": "DECRYPT", "outcome": "success", "access_purpose": "model_training", "signature": "hmac_sha256_sig"}
 ```
 
-## 🏥 Compliance
+## Compliance
 
 ### HIPAA Compliance
 
 PyMedSec addresses HIPAA Security Rule requirements:
 
-- **§164.312(a)(1)** - Access Control: KMS-based access control with audit logging
-- **§164.312(a)(2)(i)** - Unique User Identification: Actor tracking in audit logs
-- **§164.312(b)** - Audit Controls: Comprehensive tamper-evident audit trail
-- **§164.312(c)(1)** - Integrity: HMAC signatures and hash verification
-- **§164.312(d)** - Person or Entity Authentication: KMS authentication
-- **§164.312(e)(1)** - Transmission Security: Envelope encryption for data in transit
+- **164.312(a)(1)** - Access Control: KMS-based access control with audit logging
+- **164.312(a)(2)(i)** - Unique User Identification: Actor tracking in audit logs
+- **164.312(b)** - Audit Controls: Comprehensive tamper-evident audit trail
+- **164.312(c)(1)** - Integrity: HMAC signatures and hash verification
+- **164.312(d)** - Person or Entity Authentication: KMS authentication
+- **164.312(e)(1)** - Transmission Security: Envelope encryption for data in transit
 
 ### GDPR Compliance
 
@@ -1262,7 +1262,7 @@ PyMedSec addresses HIPAA Security Rule requirements:
 - **21 CFR Part 11** - Electronic Records: Tamper-evident audit trail and electronic signatures
 - **CLIA** - Clinical Laboratory Standards: Quality controls and traceability
 
-## 📊 Performance
+## Performance
 
 ### Benchmarks
 
@@ -1281,13 +1281,8 @@ _Benchmarks on AWS c5.2xlarge (8 vCPU, 16 GB RAM)_
 - **Cloud Native**: Native integration with AWS, Azure, and GCP KMS services
 - **Memory Efficient**: Zero-copy operations and automatic cleanup
 - **Batch Processing**: Optimized for large-scale medical imaging pipelines
-  pip install pymedsec[aws]
 
-# With Vault KMS support
-
-pip install pymedsec[vault]
-
-## 🔧 Examples
+## Examples
 
 ### Healthcare Research Pipeline
 
@@ -1362,7 +1357,7 @@ for epoch in range(10):
 
 ### Command Line Interface
 
-PyMedSec provides a comprehensive CLI for batch processing and operations:
+PyMedSec provides CLI commands for batch processing and operations:
 
 ```bash
 # Set up environment
@@ -1408,7 +1403,7 @@ pymedsec audit-status --blockchain
 pymedsec audit-verify --start-date 2025-09-01 --end-date 2025-09-09
 ```
 
-## 🛠️ Development
+## Development
 
 ### Setting Up Development Environment
 
@@ -1473,7 +1468,7 @@ make docs-serve
 make docs-build
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Production Deployment Checklist
 
@@ -1571,7 +1566,7 @@ spec:
             claimName: audit-storage
 ```
 
-## 📚 Additional Resources
+## Additional Resources
 
 ### Documentation
 
@@ -1595,7 +1590,7 @@ spec:
 - [MONAI](https://monai.io/) - Medical imaging AI framework
 - [OHIF Viewer](https://ohif.org/) - Web-based medical imaging viewer
 
-## ⚖️ Legal & Compliance
+## Legal & Compliance
 
 ### License
 
@@ -1622,11 +1617,11 @@ This software may be subject to export controls. Users are responsible for compl
 
 <div align="center">
 
-**Made with ❤️ for the healthcare community**
+**For the healthcare community**
 
-[🏠 Homepage](https://github.com/Faerque/pymedsec) •
-[📖 Documentation](https://pymedsec.readthedocs.io/) •
-[🐛 Report Bug](https://github.com/Faerque/pymedsec/issues) •
-[💡 Request Feature](https://github.com/Faerque/pymedsec/issues)
+[Homepage](https://github.com/Faerque/pymedsec) •
+[Documentation](https://pymedsec.readthedocs.io/) •
+[Report Bug](https://github.com/Faerque/pymedsec/issues) •
+[Request Feature](https://github.com/Faerque/pymedsec/issues)
 
 </div>

@@ -107,21 +107,21 @@ python test_encryption.py --kms aws --policy gxplab_default --files image.tif
 
 ## Features
 
-✅ **AWS KMS Integration**: Production-grade key management  
-✅ **Multiple Compliance Policies**: HIPAA, GDPR, GXP Lab support  
-✅ **Medical Image Formats**: DICOM, JPEG, PNG, TIFF support  
-✅ **Blockchain Audit Trails**: Immutable operation logging  
-✅ **Memory-Only Operations**: No plaintext disk writes  
-✅ **Envelope Encryption**: AES-256-GCM with KMS key wrapping
+- **AWS KMS Integration**: Key management support
+- **Multiple Compliance Policies**: HIPAA, GDPR, and GXP Lab
+- **Medical Image Formats**: DICOM, JPEG, PNG, TIFF
+- **Blockchain Audit Trails**: Immutable operation logging
+- **Memory-Only Operations**: No plaintext disk writes
+- **Envelope Encryption**: AES-256-GCM with KMS key wrapping
 
 ## Testing Results
 
 All tests passed successfully:
 
-- ✅ **AWS KMS Tests**: 4/4 files encrypted/decrypted with HIPAA, GDPR, GXP policies
-- ✅ **Blockchain Tests**: 100% verification rate for audit anchors
-- ✅ **Data Integrity**: Perfect integrity verification for all test files
-- ✅ **File Formats**: DICOM (27MB), JPEG (107KB), PNG (137KB), TIFF (310KB)
+- **AWS KMS Tests**: 4/4 files encrypted/decrypted with HIPAA, GDPR, GXP policies
+- **Blockchain Tests**: 100% verification rate for audit anchors
+- **Data Integrity**: Integrity verification passed for all test files
+- **File Formats**: DICOM (27MB), JPEG (107KB), PNG (137KB), TIFF (310KB)
 
 ## Documentation
 
@@ -149,6 +149,6 @@ python test_all_policies.py --file Test_jpg.jpg --kms mock
 
 ## Support
 
-- Check [AWS_KMS_SETUP_GUIDE.md](AWS_KMS_SETUP_GUIDE.md) for comprehensive documentation
+- Check [AWS_KMS_SETUP_GUIDE.md](AWS_KMS_SETUP_GUIDE.md) for detailed setup documentation
 - Review test scripts for working examples
 - Ensure AWS KMS permissions are properly configured

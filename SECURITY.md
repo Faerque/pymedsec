@@ -6,11 +6,12 @@ We actively support the following versions of PyMedSec with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+| 0.2.x   | Yes                |
+| 0.1.x   | No                 |
 
 ## Reporting a Vulnerability
 
-**⚠️ IMPORTANT: Do NOT report security vulnerabilities through public GitHub issues.**
+**Important: Do NOT report security vulnerabilities through public GitHub issues.**
 
 PyMedSec handles sensitive medical data and security vulnerabilities could impact patient privacy and healthcare compliance. Please report security issues responsibly.
 
@@ -35,11 +36,11 @@ PyMedSec handles sensitive medical data and security vulnerabilities could impac
 
 ### Security Disclosure Process
 
-1. **Report received** → Acknowledgment sent
-2. **Vulnerability confirmed** → Security advisory created
-3. **Fix developed** → Patch testing and validation
-4. **Release prepared** → Security update published
-5. **Public disclosure** → CVE assigned and published (30 days after fix)
+1. **Report received** -> Acknowledgment sent
+2. **Vulnerability confirmed** -> Security advisory created
+3. **Fix developed** -> Patch testing and validation
+4. **Release prepared** -> Security update published
+5. **Public disclosure** -> CVE assigned and published (30 days after fix)
 
 ## Security Best Practices
 

@@ -204,7 +204,7 @@ def encrypt_medical_image(file_path, policy_name='hipaa_default'):
     with open(output_file, 'w') as f:
         json.dump(encrypted_package, f, indent=2)
 
-    print(f"✅ File encrypted: {output_file}")
+    print(f"File encrypted: {output_file}")
     return encrypted_package
 
 def decrypt_medical_image(encrypted_package_file):
@@ -233,9 +233,9 @@ def decrypt_medical_image(encrypted_package_file):
         output_file = encrypted_package_file.replace('.encrypted.pkg.json', '.decrypted')
         with open(output_file, 'wb') as f:
             f.write(decrypted_data)
-        print(f"✅ File decrypted: {output_file}")
+        print(f"File decrypted: {output_file}")
     else:
-        print("✅ File decrypted (memory only - no disk write)")
+        print("File decrypted (memory only - no disk write)")
 
     return decrypted_data
 
@@ -340,7 +340,7 @@ def batch_encrypt_medical_images(directory, policy_name='hipaa_default'):
 
         for file_path in files:
             try:
-                print(f"🔐 Encrypting: {os.path.basename(file_path)}")
+                print(f"Encrypting: {os.path.basename(file_path)}")
 
                 # Read file
                 with open(file_path, 'rb') as f:
@@ -369,12 +369,12 @@ def batch_encrypt_medical_images(directory, policy_name='hipaa_default'):
                     json.dump(encrypted_package, f, indent=2)
 
                 encrypted_files.append(output_file)
-                print(f"✅ Encrypted: {output_file}")
+                print(f"Encrypted: {output_file}")
 
             except Exception as e:
-                print(f"❌ Failed to encrypt {file_path}: {e}")
+                print(f"Failed to encrypt {file_path}: {e}")
 
-    print(f"\n📊 Batch encryption complete: {len(encrypted_files)} files encrypted")
+    print(f"\nBatch encryption complete: {len(encrypted_files)} files encrypted")
     return encrypted_files
 
 # Usage
@@ -579,41 +579,41 @@ def verify_environment():
         session = boto3.Session(profile_name=profile)
         sts = session.client('sts')
         identity = sts.get_caller_identity()
-        checks.append(("✅ AWS Profile", f"Connected as {identity['Arn']}"))
+        checks.append(("PASS AWS Profile", f"Connected as {identity['Arn']}"))
     except Exception as e:
-        checks.append(("❌ AWS Profile", str(e)))
+        checks.append(("FAIL AWS Profile", str(e)))
 
     # 2. Check KMS key
     try:
         session = boto3.Session(profile_name=profile)
         kms = session.client('kms', region_name='ap-south-1')
         key = kms.describe_key(KeyId='alias/pymedsec')
-        checks.append(("✅ KMS Key", f"Found key {key['KeyMetadata']['KeyId']}"))
+        checks.append(("PASS KMS Key", f"Found key {key['KeyMetadata']['KeyId']}"))
     except Exception as e:
-        checks.append(("❌ KMS Key", str(e)))
+        checks.append(("FAIL KMS Key", str(e)))
 
     # 3. Check pymedsec policies
     policy_dir = Path(__file__).parent / "pymedsec" / "policies"
     if policy_dir.exists():
         policies = list(policy_dir.glob("*.yaml"))
-        checks.append(("✅ Policies", f"Found {len(policies)} policy files"))
+        checks.append(("PASS Policies", f"Found {len(policies)} policy files"))
     else:
-        checks.append(("❌ Policies", "Policy directory not found"))
+        checks.append(("FAIL Policies", "Policy directory not found"))
 
     # Print results
-    print("🔍 Environment Verification Results")
+    print("Environment Verification Results")
     print("=" * 50)
     for check, result in checks:
         print(f"{check}: {result}")
 
-    return all("✅" in check for check, _ in checks)
+    return all(check.startswith("PASS") for check, _ in checks)
 
 if __name__ == "__main__":
     success = verify_environment()
     if success:
-        print("\n🎉 Environment setup is complete!")
+        print("\nEnvironment setup is complete.")
     else:
-        print("\n⚠️  Environment setup needs attention.")
+        print("\nEnvironment setup needs attention.")
 ```
 
 ## Security Best Practices
